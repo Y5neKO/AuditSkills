@@ -1,0 +1,124 @@
+{
+  "business_logic_analysis": {
+    "summary": "项目是一个工具库，业务逻辑相对简单。主要风险在于UReport模块的报表设计和文件操作功能。",
+    "logical_flaws": [
+      {
+        "issue_id": "BIZ-001",
+        "severity": "HIGH",
+        "title": "UReport报表设计器功能暴露且未充分授权",
+        "description": "UReport报表设计器允许用户动态配置数据源、执行SQL预览等功能，这些功能本应只对管理员开放。",
+        "affected_components": [
+          "DatasourceServletAction",
+          "DesignerServletAction"
+        ],
+        "business_impact": "任何能访问设计器的用户可以探测数据库结构、执行SQL查询",
+        "vulnerability_chain": [
+          "1. 用户访问/ureport/designer",
+          "2. 绕过认证或获得低权限账户",
+          "3. 配置恶意数据源并测试连接",
+          "4. 使用buildDatabaseTables获取数据库结构",
+          "5. 可能通过buildFields执行SQL注入"
+        ],
+        "recommendation": "限制设计器功能仅管理员可用，添加详细审计日志"
+      },
+      {
+        "issue_id": "BIZ-002",
+        "severity": "MEDIUM",
+        "title": "报表文件删除缺乏二次确认",
+        "description": "ReportEndpoint的remove方法直接根据ids参数删除文件，缺乏二次确认和回收站机制。",
+        "affected_endpoints": ["POST /report/rest/remove"],
+        "vulnerable_code": "ReportEndpoint.java:66 - service.removeByIds(Func.toLongList(ids))",
+        "business_impact": "误操作或攻击可导致重要报表文件永久丢失",
+        "recommendation": "添加删除确认、回收站功能、删除审计"
+      },
+      {
+        "issue_id": "BIZ-003",
+        "severity": "MEDIUM",
+        "title": "日志记录可能包含敏感信息",
+        "description": "LogApi、LogError、LogUsual等日志实体记录了IP地址和错误信息，可能泄露用户隐私和系统架构信息。",
+        "affected_components": [
+          "LogApi",
+          "LogError",
+          "LogUsual"
+        ],
+        "privacy_concerns": [
+          "IP地址可能被视为个人身份信息",
+          "错误堆栈可能暴露系统架构",
+          "API路径可能暴露业务逻辑"
+        ],
+        "recommendation": "对敏感信息脱敏，限制日志访问权限，符合GDPR/个人信息保护法要求"
+      },
+      {
+        "issue_id": "BIZ-004",
+        "severity": "LOW",
+        "title": "硬编码默认数据库密码",
+        "description": "开发模板配置中使用root作为默认密码，生产环境可能忘记修改。",
+        "location": "blade-starter-develop/src/main/resources/templates/code.properties:4",
+        "business_impact": "可能导致生产环境数据库使用弱口令",
+        "recommendation": "移除默认密码，强制配置时输入"
+      }
+    ],
+    "privilege_escalation": [
+      {
+        "scenario": "通过报表注入实现权限提升",
+        "feasibility": "LOW",
+        "description": "如果报表引擎存在表达式注入漏洞，可能利用报表功能执行任意代码",
+        "mitigation": "限制报表表达式引擎的访问权限"
+      },
+      {
+        "scenario": "通过日志功能获取管理员信息",
+        "feasibility": "MEDIUM",
+        "description": "日志中可能包含管理员操作记录和敏感信息",
+        "mitigation": "限制日志查看权限"
+      }
+    ],
+    "data_flow_concerns": [
+      {
+        "flow": "用户输入 -> UReport设计器 -> SQL执行",
+        "risk": "SQL注入",
+        "status": "NEEDS_REVIEW"
+      },
+      {
+        "flow": "用户上传 -> 报表文件存储 -> 文件读取",
+        "risk": "路径遍历",
+        "status": "PARTIALLY_MITIGATED"
+      },
+      {
+        "flow": "用户操作 -> 日志记录 -> 日志查询",
+        "risk": "信息泄露",
+        "status": "LOG_ACCESS_REQUIRES_CONTROL"
+      }
+    ],
+    "workflow_issues": [
+      {
+        "issue": "缺乏审批流程",
+        "description": "报表发布和删除无审批流程"
+      },
+      {
+        "issue": "缺乏变更历史",
+        "description": "报表修改无版本控制"
+      },
+      {
+        "issue": "缺乏操作审计",
+        "description": "关键操作缺乏审计日志"
+      }
+    ]
+  },
+  "recommendations": {
+    "immediate": [
+      "为UReport设计器添加管理员权限检查",
+      "修复或删除存在安全漏洞的设计器端点",
+      "审查所有删除操作的权限控制"
+    ],
+    "short_term": [
+      "实现操作审计日志",
+      "添加敏感操作的二次确认",
+      "对日志数据进行脱敏处理"
+    ],
+    "long_term": [
+      "实现报表版本控制",
+      "建立审批流程",
+      "定期进行安全审计"
+    ]
+  }
+}

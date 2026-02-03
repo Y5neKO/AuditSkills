@@ -1,0 +1,204 @@
+{
+  "traces": [
+    {
+      "trace_id": "TRACE-001",
+      "sink_id": "SINK-001",
+      "vulnerability_type": "unsafe_class_loading",
+      "source": "HTTP Request Parameter: clazz",
+      "sink_function": "Class.forName",
+      "entry_point": "/ureport/datasource",
+      "call_chain": [
+        {
+          "step": 1,
+          "location": "UReportServlet.java:73",
+          "code": "ServletAction targetHandler = actionMap.get(targetUrl);",
+          "type": "ROUTER",
+          "description": "根据URL路由到DatasourceServletAction"
+        },
+        {
+          "step": 2,
+          "location": "DatasourceServletAction.java:64",
+          "code": "String method = retriveMethod(req);",
+          "type": "DISPATCH",
+          "description": "从request获取method参数确定调用哪个方法"
+        },
+        {
+          "step": 3,
+          "location": "DatasourceServletAction.java:108",
+          "code": "String clazz = req.getParameter(\"clazz\");",
+          "type": "SOURCE",
+          "tainted": true,
+          "description": "直接从HTTP请求参数获取clazz，无任何验证"
+        },
+        {
+          "step": 4,
+          "location": "DatasourceServletAction.java:111",
+          "code": "Class<?> targetClass = Class.forName(clazz);",
+          "type": "SINK",
+          "tainted": true,
+          "description": "使用未验证的用户输入加载类"
+        }
+      ],
+      "filters": [],
+      "preliminary_vulnerable": true,
+      "confidence": "HIGH",
+      "exploitability": "HIGH",
+      "impact": "可能导致任意类加载，配合gadget chain可导致RCE",
+      "recommendation": "对clazz参数进行白名单验证，只允许预定义的安全类"
+    },
+    {
+      "trace_id": "TRACE-002",
+      "sink_id": "SINK-002",
+      "vulnerability_type": "jdbc_driver_loading",
+      "source": "HTTP Request Parameter: driver",
+      "sink_function": "Class.forName",
+      "entry_point": "/ureport/datasource",
+      "call_chain": [
+        {
+          "step": 1,
+          "location": "UReportServlet.java:73",
+          "code": "ServletAction targetHandler = actionMap.get(targetUrl);",
+          "type": "ROUTER"
+        },
+        {
+          "step": 2,
+          "location": "DatasourceServletAction.java:296",
+          "code": "testConnection方法被调用",
+          "type": "DISPATCH"
+        },
+        {
+          "step": 3,
+          "location": "DatasourceServletAction.java:297",
+          "code": "String username = req.getParameter(\"username\");",
+          "type": "SOURCE",
+          "tainted": true
+        },
+        {
+          "step": 4,
+          "location": "DatasourceServletAction.java:300",
+          "code": "String driver = req.getParameter(\"driver\");",
+          "type": "SOURCE",
+          "tainted": true,
+          "description": "从请求获取JDBC驱动类名"
+        },
+        {
+          "step": 5,
+          "location": "DatasourceServletAction.java:304",
+          "code": "Class.forName(driver);",
+          "type": "SINK",
+          "tainted": true,
+          "description": "加载用户指定的JDBC驱动类"
+        },
+        {
+          "step": 6,
+          "location": "DatasourceServletAction.java:305",
+          "code": "conn = DriverManager.getConnection(url, username, password);",
+          "type": "SINK",
+          "tainted": true,
+          "description": "使用用户提供的凭据连接数据库"
+        }
+      ],
+      "filters": [],
+      "preliminary_vulnerable": true,
+      "confidence": "MEDIUM",
+      "exploitability": "MEDIUM",
+      "impact": "可能导致恶意JDBC驱动加载（如log4j2的JDBC Appender）",
+      "recommendation": "对driver参数进行白名单验证"
+    },
+    {
+      "trace_id": "TRACE-003",
+      "sink_id": "SINK-005",
+      "vulnerability_type": "open_redirect",
+      "source": "Configuration Property: blockPage",
+      "sink_function": "response.sendRedirect",
+      "entry_point": "Sentinel Block Handler",
+      "call_chain": [
+        {
+          "step": 1,
+          "location": "BladeSentinelFilterConfiguration.java:47",
+          "code": "sentinelWebMvcConfig = sentinelWebMvcConfig(properties, ...)",
+          "type": "CONFIG",
+          "description": "从配置获取Sentinel属性"
+        },
+        {
+          "step": 2,
+          "location": "BladeSentinelFilterConfiguration.java:58",
+          "code": "if (StringUtils.hasText(properties.getBlockPage()))",
+          "type": "CHECK",
+          "description": "检查blockPage是否配置"
+        },
+        {
+          "step": 3,
+          "location": "BladeSentinelFilterConfiguration.java:59",
+          "code": "response.sendRedirect(properties.getBlockPage())",
+          "type": "SINK",
+          "tainted": false,
+          "description": "重定向到配置的blockPage"
+        }
+      ],
+      "filters": [],
+      "preliminary_vulnerable": true,
+      "confidence": "LOW",
+      "exploitability": "LOW",
+      "impact": "如果配置被篡改可能导致钓鱼攻击",
+      "recommendation": "验证blockPage格式，使用相对路径或白名单"
+    },
+    {
+      "trace_id": "TRACE-004",
+      "sink_id": "SINK-006",
+      "vulnerability_type": "path_traversal",
+      "source": "Unknown (likely user input)",
+      "sink_function": "FileInputStream",
+      "entry_point": "DefaultImageProvider.getImage",
+      "call_chain": [
+        {
+          "step": 1,
+          "location": "DefaultImageProvider.java:45",
+          "code": "return new FileInputStream(path);",
+          "type": "SINK",
+          "tainted": "UNKNOWN",
+          "description": "需要追溯path参数来源"
+        }
+      ],
+      "filters": [],
+      "preliminary_vulnerable": true,
+      "confidence": "MEDIUM",
+      "exploitability": "MEDIUM",
+      "impact": "可能读取任意文件",
+      "recommendation": "验证path在允许的目录内"
+    },
+    {
+      "trace_id": "TRACE-005",
+      "sink_id": "SINK-010",
+      "vulnerability_type": "ssrf",
+      "source": "Unknown (method parameter)",
+      "sink_function": "OkHttpClient",
+      "entry_point": "OkHttpUtil class",
+      "call_chain": [
+        {
+          "step": 1,
+          "location": "OkHttpUtil.java:181",
+          "code": "OkHttpClient okHttpClient = new OkHttpClient();",
+          "type": "SINK",
+          "tainted": "DEPENDS",
+          "description": "工具类，安全性取决于调用方传入的URL"
+        }
+      ],
+      "filters": [],
+      "preliminary_vulnerable": false,
+      "confidence": "LOW",
+      "exploitability": "DEPENDS",
+      "impact": "如果URL参数受用户控制则存在SSRF",
+      "recommendation": "在工具类中增加URL验证机制"
+    }
+  ],
+  "statistics": {
+    "total_traces": 5,
+    "vulnerable_traces": 3,
+    "by_confidence": {
+      "HIGH": 1,
+      "MEDIUM": 2,
+      "LOW": 2
+    }
+  }
+}

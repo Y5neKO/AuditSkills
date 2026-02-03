@@ -1,0 +1,141 @@
+{
+  "project_info": {
+    "framework": "Spring Boot / Spring Cloud",
+    "language": "Java",
+    "project_type": "Maven Multi-Module Tool Library",
+    "scan_time": "2025-02-03T00:00:00Z"
+  },
+  "entry_points": [
+    {
+      "entry_id": "ENTRY-001",
+      "method": "GET",
+      "path": "/report/rest/detail",
+      "file": "blade-starter-report/src/main/java/org/springblade/core/report/endpoint/ReportEndpoint.java",
+      "line": 47,
+      "handler": "detail",
+      "class": "ReportEndpoint",
+      "parameters": [
+        {
+          "name": "file",
+          "type": "ReportFileEntity",
+          "source": "@ModelAttribute",
+          "description": "Report file entity for query"
+        }
+      ],
+      "description": "Get report file detail",
+      "authorization": "UNKNOWN"
+    },
+    {
+      "entry_id": "ENTRY-002",
+      "method": "GET",
+      "path": "/report/rest/list",
+      "file": "blade-starter-report/src/main/java/org/springblade/core/report/endpoint/ReportEndpoint.java",
+      "line": 56,
+      "handler": "list",
+      "class": "ReportEndpoint",
+      "parameters": [
+        {
+          "name": "file",
+          "type": "Map<String, Object>",
+          "source": "@RequestParam",
+          "description": "Query parameters map"
+        },
+        {
+          "name": "query",
+          "type": "Query",
+          "source": "@RequestParam",
+          "description": "Pagination query object"
+        }
+      ],
+      "description": "Get paginated list of report files",
+      "authorization": "UNKNOWN"
+    },
+    {
+      "entry_id": "ENTRY-003",
+      "method": "POST",
+      "path": "/report/rest/remove",
+      "file": "blade-starter-report/src/main/java/org/springblade/core/report/endpoint/ReportEndpoint.java",
+      "line": 65,
+      "handler": "remove",
+      "class": "ReportEndpoint",
+      "parameters": [
+        {
+          "name": "ids",
+          "type": "String",
+          "source": "@RequestParam",
+          "description": "Comma-separated IDs to delete"
+        }
+      ],
+      "description": "Delete report files by IDs",
+      "authorization": "UNKNOWN"
+    },
+    {
+      "entry_id": "ENTRY-004",
+      "method": "POST",
+      "path": "/log/saveUsualLog",
+      "file": "blade-starter-log/src/main/java/org/springblade/core/log/feign/ILogClient.java",
+      "line": 46,
+      "handler": "saveUsualLog",
+      "class": "ILogClient",
+      "parameters": [
+        {
+          "name": "usualLog",
+          "type": "UsualLog",
+          "source": "@RequestBody",
+          "description": "Usual log object"
+        }
+      ],
+      "description": "Save usual log entry (Feign client)",
+      "authorization": "UNKNOWN"
+    },
+    {
+      "entry_id": "ENTRY-005",
+      "method": "POST",
+      "path": "/log/saveApiLog",
+      "file": "blade-starter-log/src/main/java/org/springblade/core/log/feign/ILogClient.java",
+      "line": 55,
+      "handler": "saveApiLog",
+      "class": "ILogClient",
+      "parameters": [
+        {
+          "name": "apiLog",
+          "type": "ApiLog",
+          "source": "@RequestBody",
+          "description": "API log object"
+        }
+      ],
+      "description": "Save API log entry (Feign client)",
+      "authorization": "UNKNOWN"
+    },
+    {
+      "entry_id": "ENTRY-006",
+      "method": "POST",
+      "path": "/log/saveErrorLog",
+      "file": "blade-starter-log/src/main/java/org/springblade/core/log/feign/ILogClient.java",
+      "line": 64,
+      "handler": "saveErrorLog",
+      "class": "ILogClient",
+      "parameters": [
+        {
+          "name": "errorLog",
+          "type": "ErrorLog",
+          "source": "@RequestBody",
+          "description": "Error log object"
+        }
+      ],
+      "description": "Save error log entry (Feign client)",
+      "authorization": "UNKNOWN"
+    }
+  ],
+  "statistics": {
+    "total_entries": 6,
+    "by_method": {
+      "GET": 2,
+      "POST": 4
+    },
+    "by_module": {
+      "blade-starter-report": 3,
+      "blade-starter-log": 3
+    }
+  }
+}

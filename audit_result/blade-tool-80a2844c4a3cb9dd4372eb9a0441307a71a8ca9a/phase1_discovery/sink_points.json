@@ -1,0 +1,168 @@
+{
+  "sinks": [
+    {
+      "sink_id": "SINK-001",
+      "type": "deserialization",
+      "function": "Class.forName",
+      "file": "blade-starter-report/src/main/java/com/bstek/ureport/console/designer/DatasourceServletAction.java",
+      "line": 111,
+      "code_snippet": "Class<?> targetClass = Class.forName(clazz);",
+      "context": "buildClass方法中，clazz参数直接从request.getParameter获取",
+      "risk_level": "HIGH",
+      "cwe": "CWE-94",
+      "user_controlled": true,
+      "description": "通过用户输入的类名进行类加载，可能导致任意类加载"
+    },
+    {
+      "sink_id": "SINK-002",
+      "type": "deserialization",
+      "function": "Class.forName",
+      "file": "blade-starter-report/src/main/java/com/bstek/ureport/console/designer/DatasourceServletAction.java",
+      "line": 304,
+      "code_snippet": "Class.forName(driver);",
+      "context": "testConnection方法中，driver参数从request获取",
+      "risk_level": "MEDIUM",
+      "cwe": "CWE-94",
+      "user_controlled": true,
+      "description": "JDBC驱动类加载，受控于用户输入"
+    },
+    {
+      "sink_id": "SINK-003",
+      "type": "deserialization",
+      "function": "Class.forName",
+      "file": "blade-starter-report/src/main/java/com/bstek/ureport/console/designer/DatasourceServletAction.java",
+      "line": 369,
+      "code_snippet": "Class.forName(driver);",
+      "context": "buildConnection方法中，driver参数从request获取",
+      "risk_level": "MEDIUM",
+      "cwe": "CWE-94",
+      "user_controlled": true,
+      "description": "JDBC驱动类加载"
+    },
+    {
+      "sink_id": "SINK-004",
+      "type": "deserialization",
+      "function": "Class.forName",
+      "file": "blade-core-tool/src/main/java/org/springblade/core/tool/utils/BeanUtil.java",
+      "line": 59,
+      "code_snippet": "Class<?> clazz = Class.forName(clazzStr);",
+      "context": "newInstance方法中，clazzStr参数来自调用者",
+      "risk_level": "MEDIUM",
+      "cwe": "CWE-94",
+      "user_controlled": "DEPENDS",
+      "description": "通用工具方法，通过类名字符串实例化对象"
+    },
+    {
+      "sink_id": "SINK-005",
+      "type": "open_redirect",
+      "function": "response.sendRedirect",
+      "file": "blade-core-cloud/src/main/java/org/springblade/core/cloud/config/BladeSentinelFilterConfiguration.java",
+      "line": 59,
+      "code_snippet": "response.sendRedirect(properties.getBlockPage())",
+      "context": "Sentinel阻断处理，重定向URL来自配置属性",
+      "risk_level": "LOW",
+      "cwe": "CWE-601",
+      "user_controlled": false,
+      "description": "开放重定向，URL来自配置，可能被篡改"
+    },
+    {
+      "sink_id": "SINK-006",
+      "type": "path_traversal",
+      "function": "FileInputStream",
+      "file": "blade-starter-report/src/main/java/com/bstek/ureport/provider/image/DefaultImageProvider.java",
+      "line": 45,
+      "code_snippet": "return new FileInputStream(path);",
+      "context": "图片读取，path参数可能受用户控制",
+      "risk_level": "MEDIUM",
+      "cwe": "CWE-22",
+      "user_controlled": "LIKELY",
+      "description": "文件读取操作，可能存在路径遍历风险"
+    },
+    {
+      "sink_id": "SINK-007",
+      "type": "path_traversal",
+      "function": "FileInputStream",
+      "file": "blade-starter-report/src/main/java/com/bstek/ureport/provider/report/file/FileReportProvider.java",
+      "line": 47,
+      "code_snippet": "return new FileInputStream(fullPath);",
+      "context": "报表文件读取",
+      "risk_level": "MEDIUM",
+      "cwe": "CWE-22",
+      "user_controlled": "LIKELY",
+      "description": "报表文件读取，可能存在路径遍历"
+    },
+    {
+      "sink_id": "SINK-008",
+      "type": "arbitrary_file_write",
+      "function": "FileOutputStream",
+      "file": "blade-starter-report/src/main/java/com/bstek/ureport/provider/report/file/FileReportProvider.java",
+      "line": 96,
+      "code_snippet": "outStream = new FileOutputStream(new File(fullPath));",
+      "context": "报表文件写入",
+      "risk_level": "MEDIUM",
+      "cwe": "CWE-22",
+      "user_controlled": "LIKELY",
+      "description": "报表文件写入，可能存在任意文件写入"
+    },
+    {
+      "sink_id": "SINK-009",
+      "type": "path_traversal",
+      "function": "FileOutputStream",
+      "file": "blade-core-boot/src/main/java/org/springblade/core/boot/file/BladeFileProxyFactory.java",
+      "line": 98,
+      "code_snippet": "ImageUtil.zoomScale(ImageUtil.readImage(path), new FileOutputStream(new File(path)), null, ...",
+      "context": "图片压缩时的文件写入，path参数来自上传",
+      "risk_level": "LOW",
+      "cwe": "CWE-22",
+      "user_controlled": "PARTIAL",
+      "description": "文件操作，路径经过一定处理"
+    },
+    {
+      "sink_id": "SINK-010",
+      "type": "ssrf",
+      "function": "OkHttpClient",
+      "file": "blade-core-tool/src/main/java/org/springblade/core/tool/utils/OkHttpUtil.java",
+      "line": 181,
+      "code_snippet": "OkHttpClient okHttpClient = new OkHttpClient();",
+      "context": "HTTP工具类，用于发送HTTP请求",
+      "risk_level": "MEDIUM",
+      "cwe": "CWE-918",
+      "user_controlled": "DEPENDS",
+      "description": "HTTP客户端工具，如果URL参数受用户控制则存在SSRF风险"
+    },
+    {
+      "sink_id": "SINK-011",
+      "type": "ssrf",
+      "function": "RestTemplate",
+      "file": "blade-core-cloud/src/main/java/org/springblade/core/cloud/http/LbRestTemplate.java",
+      "line": 14,
+      "code_snippet": "public class LbRestTemplate extends RestTemplate",
+      "context": "负载均衡RestTemplate，用于微服务调用",
+      "risk_level": "LOW",
+      "cwe": "CWE-918",
+      "user_controlled": "UNLIKELY",
+      "description": "RestTemplate子类，主要用于内部服务调用"
+    }
+  ],
+  "statistics": {
+    "total_sinks": 11,
+    "by_type": {
+      "deserialization": 4,
+      "open_redirect": 1,
+      "path_traversal": 4,
+      "arbitrary_file_write": 1,
+      "ssrf": 2
+    },
+    "by_risk_level": {
+      "HIGH": 1,
+      "MEDIUM": 7,
+      "LOW": 3
+    }
+  },
+  "recommendations": [
+    "SINK-001: 建议对clazz参数进行白名单验证，限制可加载的类",
+    "SINK-005: 建议验证blockPage配置，使用相对路径或白名单",
+    "SINK-006/007/008: 建议对文件路径进行规范化和白名单验证",
+    "SINK-010: 建议在OkHttpUtil中增加URL白名单验证机制"
+  ]
+}

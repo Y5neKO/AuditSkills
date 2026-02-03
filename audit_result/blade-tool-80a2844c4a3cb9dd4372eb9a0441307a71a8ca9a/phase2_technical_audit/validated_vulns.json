@@ -1,0 +1,141 @@
+{
+  "validated_vulnerabilities": [
+    {
+      "vuln_id": "VULN-001",
+      "trace_id": "TRACE-001",
+      "name": "UReport Designer Unsafe Class Loading",
+      "severity": "HIGH",
+      "cwe": "CWE-94",
+      "cvss_score": 8.6,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "description": "在UReport报表设计器中，buildClass方法直接使用用户输入的clazz参数调用Class.forName，无任何验证。",
+      "affected_component": "blade-starter-report",
+      "entry_point": "/ureport/datasource?method=buildClass",
+      "poachable": true,
+      "status": "CONFIRMED",
+      "findings": {
+        "source": "req.getParameter(\"clazz\")",
+        "sink": "Class.forName(clazz)",
+        "no_validation": true,
+        "no_sanitization": true
+      },
+      "exploitation_scenario": "攻击者可以通过发送GET请求到/ureport/datasource?method=buildClass&clazz=恶意类名，导致任意类加载。在某些场景下，配合反序列化gadget chain可能导致RCE。",
+      "remediation": [
+        "实现类名白名单验证机制",
+        "限制只能加载预定义的安全类",
+        "添加身份认证和授权检查"
+      ],
+      "references": [
+        "https://cwe.mitre.org/data/definitions/94.html",
+        "https://owasp.org/www-community/vulnerabilities/Unsafe_class_loading"
+      ]
+    },
+    {
+      "vuln_id": "VULN-002",
+      "trace_id": "TRACE-002",
+      "name": "UReport JDBC Driver Arbitrary Class Loading",
+      "severity": "MEDIUM",
+      "cwe": "CWE-94",
+      "cvss_score": 6.5,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+      "description": "testConnection方法接受用户提供的driver参数并调用Class.forName加载，可能导致恶意驱动加载。",
+      "affected_component": "blade-starter-report",
+      "entry_point": "/ureport/datasource?method=testConnection",
+      "poachable": true,
+      "status": "CONFIRMED",
+      "findings": {
+        "source": "req.getParameter(\"driver\")",
+        "sink": "Class.forName(driver)",
+        "additional_sink": "DriverManager.getConnection(url, username, password)",
+        "no_validation": true
+      },
+      "exploitation_scenario": "攻击者可以指定恶意JDBC驱动类名进行加载，某些恶意驱动可能包含恶意代码。同时可以探测内网数据库连接。",
+      "remediation": [
+        "对JDBC驱动类名进行白名单限制",
+        "添加身份认证和授权",
+        "限制数据库连接白名单"
+      ],
+      "references": [
+        "https://cwe.mitre.org/data/definitions/94.html"
+      ]
+    },
+    {
+      "vuln_id": "VULN-003",
+      "trace_id": "TRACE-003",
+      "name": "Sentinel Block Page Open Redirect",
+      "severity": "LOW",
+      "cwe": "CWE-601",
+      "cvss_score": 4.3,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:N/A:N",
+      "description": "Sentinel流控阻断时，会重定向到配置的blockPage。如果该配置被篡改，可能导致开放重定向。",
+      "affected_component": "blade-core-cloud",
+      "entry_point": "N/A (Sentinel block handler)",
+      "poachable": false,
+      "status": "POTENTIAL",
+      "findings": {
+        "source": "properties.getBlockPage()",
+        "sink": "response.sendRedirect()",
+        "validation": "依赖配置安全"
+      },
+      "exploitation_scenario": "需要配置被篡改的情况下才可能被利用，风险较低。但在多租户或动态配置环境中可能存在风险。",
+      "remediation": [
+        "验证blockPage格式，禁止外部域名",
+        "使用相对路径",
+        "在配置层进行验证"
+      ],
+      "references": [
+        "https://cwe.mitre.org/data/definitions/601.html"
+      ]
+    },
+    {
+      "vuln_id": "VULN-004",
+      "trace_id": "TRACE-004",
+      "name": "File Provider Path Traversal (Potential)",
+      "severity": "MEDIUM",
+      "cwe": "CWE-22",
+      "cvss_score": 5.5,
+      "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+      "description": "文件读取操作中可能存在路径遍历漏洞，需要进一步验证path参数来源。",
+      "affected_component": "blade-starter-report",
+      "entry_point": "Unknown",
+      "poachable": false,
+      "status": "NEEDS_INVESTIGATION",
+      "findings": {
+        "sink": "new FileInputStream(path)",
+        "validation": "需要追溯path参数来源"
+      },
+      "exploitation_scenario": "如果path参数受用户控制且无验证，可能导致任意文件读取。",
+      "remediation": [
+        "验证文件路径在允许的目录内",
+        "使用规范化路径检查",
+        "限制文件访问权限"
+      ],
+      "references": [
+        "https://cwe.mitre.org/data/definitions/22.html"
+      ]
+    }
+  ],
+  "statistics": {
+    "total_vulnerabilities": 4,
+    "confirmed": 2,
+    "potential": 1,
+    "needs_investigation": 1,
+    "by_severity": {
+      "HIGH": 1,
+      "MEDIUM": 2,
+      "LOW": 1
+    }
+  },
+  "summary": {
+    "critical_findings": [
+      "VULN-001: UReport设计器存在任意类加载漏洞，可导致RCE",
+      "VULN-002: JDBC驱动加载未验证，存在安全风险"
+    ],
+    "recommendations": [
+      "立即修复VULN-001，添加类名白名单",
+      "对UReport相关端点添加身份认证",
+      "对VULN-002添加JDBC驱动白名单",
+      "对所有文件操作添加路径验证"
+    ]
+  }
+}

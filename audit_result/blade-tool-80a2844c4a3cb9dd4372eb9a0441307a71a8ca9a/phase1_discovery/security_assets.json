@@ -1,0 +1,38 @@
+{
+  "hardcoded_credentials": [
+    {
+      "asset_id": "CREDS-001",
+      "type": "database_password",
+      "file": "blade-starter-develop/src/main/resources/templates/code.properties",
+      "line": 4,
+      "content": "spring.datasource.password=root",
+      "risk_level": "HIGH",
+      "description": "硬编码的数据库密码，默认root密码存在安全风险"
+    }
+  ],
+  "configuration_files": [
+    {
+      "file": "blade-starter-develop/src/main/resources/templates/code.properties",
+      "description": "代码生成模板配置，包含数据库凭证",
+      "sensitive_data": true
+    }
+  ],
+  "api_keys": [],
+  "secrets": [],
+  "certificates": [],
+  "statistics": {
+    "total_assets": 1,
+    "by_type": {
+      "hardcoded_credentials": 1,
+      "configuration_files": 1
+    },
+    "by_risk_level": {
+      "HIGH": 1
+    }
+  },
+  "recommendations": [
+    "将敏感配置迁移到环境变量或密钥管理系统",
+    "避免在代码仓库中存储生产环境凭证",
+    "使用配置加密方案如Jasypt加密敏感信息"
+  ]
+}
