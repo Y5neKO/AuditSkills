@@ -1,0 +1,540 @@
+{
+  "language": "Java",
+  "description": "Java Web框架 危险函数 (Sink点)",
+
+  "sinks": [
+    {
+      "name": "runtime_exec",
+      "pattern": "Runtime\\.getRuntime\\(\\)\\.exec\\(",
+      "vuln_types": ["command_injection", "rce"],
+      "description": "Runtime.exec - 执行系统命令",
+      "dangerous_param": 0,
+      "examples": [
+        "Runtime.getRuntime().exec(userCommand)",
+        "Runtime.getRuntime().exec(new String[]{\"sh\", \"-c\", cmd})"
+      ],
+      "cwe": ["CWE-78", "CWE-77"],
+      "remediation": "使用ProcessBuilder并参数化"
+    },
+    {
+      "name": "processbuilder_start",
+      "pattern": "ProcessBuilder\\([^)]*\\)\\.start\\(",
+      "vuln_types": ["command_injection", "rce"],
+      "description": "ProcessBuilder.start - 执行命令",
+      "dangerous_param": null,
+      "examples": [
+        "new ProcessBuilder(userCommand).start()",
+        "new ProcessBuilder(\"cmd\", \"/c\", userInput).start()"
+      ],
+      "cwe": ["CWE-78"],
+      "remediation": "使用命令数组，避免shell解释"
+    },
+    {
+      "name": "scriptengine_eval",
+      "pattern": "(?:ScriptEngine|ScriptEngineManager)\\.eval\\(",
+      "vuln_types": ["rce", "code_injection"],
+      "description": "ScriptEngine.eval - 执行脚本",
+      "dangerous_param": 0,
+      "modules": ["javax.script"],
+      "examples": [
+        "engine.eval(userScript)",
+        "manager.getEngineByName(\"js\").eval(code)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "避免执行不可信脚本"
+    },
+    {
+      "name": "reflection_newinstance",
+      "pattern": "Class\\.forName\\([^)]+\\)\\.newInstance\\(",
+      "vuln_types": ["deserialization", "rce"],
+      "description": "反射newInstance - 实例化任意类",
+      "dangerous_param": null,
+      "examples": [
+        "Class.forName(userClass).newInstance()",
+        "Class.forName(className).getConstructor().newInstance()"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "白名单验证类名"
+    },
+    {
+      "name": "objectinputstream_read",
+      "pattern": "ObjectInputStream\\.read(?:Object|Unshared)\\(",
+      "vuln_types": ["deserialization", "rce"],
+      "description": "ObjectInputStream.read - 反序列化RCE",
+      "dangerous_param": null,
+      "modules": ["java.io"],
+      "examples": [
+        "ois.readObject()",
+        "new ObjectInputStream(inputStream).readObject()"
+      ],
+      "cwe": ["CWE-502"],
+      "remediation": "使用SerialKiller或ObjectInputFilter"
+    },
+    {
+      "name": "xmldecoder_read",
+      "pattern": "XMLDecoder\\.readObject\\(",
+      "vuln_types": ["deserialization", "rce"],
+      "description": "XMLDecoder.readObject - XML反序列化RCE",
+      "dangerous_param": null,
+      "modules": ["java.beans"],
+      "examples": [
+        "new XMLDecoder(inputStream).readObject()"
+      ],
+      "cwe": ["CWE-502"],
+      "remediation": "避免使用XMLDecoder，使用JAXB或Jackson"
+    },
+    {
+      "name": "jdbctemplate_execute",
+      "pattern": "JdbcTemplate\\.(?:execute|update|query)\\(",
+      "vuln_types": ["sqli"],
+      "description": "JdbcTemplate - SQL注入",
+      "dangerous_param": 0,
+      "modules": ["org.springframework.jdbc"],
+      "examples": [
+        "jdbcTemplate.execute(\"SELECT * FROM users WHERE id = \" + id)",
+        "jdbcTemplate.queryForList(\"SELECT * FROM users WHERE name = '\" + name + \"'\")"
+      ],
+      "cwe": ["CWE-89"],
+      "remediation": "使用?占位符参数化查询"
+    },
+    {
+      "name": "statement_execute",
+      "pattern": "Statement\\.(?:execute|executeQuery|executeUpdate)\\(",
+      "vuln_types": ["sqli"],
+      "description": "Statement执行 - SQL注入",
+      "dangerous_param": 0,
+      "modules": ["java.sql"],
+      "examples": [
+        "statement.executeQuery(\"SELECT * FROM users WHERE id = \" + id)"
+      ],
+      "cwe": ["CWE-89"],
+      "remediation": "使用PreparedStatement和参数化"
+    },
+    {
+      "name": "preparedstatement_unsafe",
+      "pattern": "PreparedStatement\\.(?:execute|executeQuery|executeUpdate)\\([^)]*\\+[^)]*\\)",
+      "vuln_types": ["sqli"],
+      "description": "PreparedStatement拼接 - SQL注入",
+      "dangerous_param": null,
+      "modules": ["java.sql"],
+      "examples": [
+        "conn.prepareStatement(\"SELECT * FROM users WHERE id = \" + id).executeQuery()"
+      ],
+      "cwe": ["CWE-89"],
+      "remediation": "使用?占位符而非拼接"
+    },
+    {
+      "name": "hibernate_create_query",
+      "pattern": "Session\\.createQuery\\(",
+      "vuln_types": ["sqli"],
+      "description": "HibernatecreateQuery - SQL注入",
+      "dangerous_param": 0,
+      "modules": ["org.hibernate"],
+      "examples": [
+        "session.createQuery(\"FROM User WHERE id = \" + userId)"
+      ],
+      "cwe": ["CWE-89"],
+      "remediation": "使用参数绑定:setParameter"
+    },
+    {
+      "name": "hibernate_createsqlquery",
+      "pattern": "Session\\.createSQLQuery\\(",
+      "vuln_types": ["sqli"],
+      "description": "Hibernate createSQLQuery - 原生SQL注入",
+      "dangerous_param": 0,
+      "modules": ["org.hibernate"],
+      "examples": [
+        "session.createSQLQuery(\"SELECT * FROM users WHERE id = \" + id)"
+      ],
+      "cwe": ["CWE-89"],
+      "remediation": "使用参数化查询"
+    },
+    {
+      "name": "criteria_builder_unsafe",
+      "pattern": "CriteriaBuilder\\.createQuery\\(",
+      "vuln_types": ["sqli"],
+      "description": "CriteriaBuilder动态查询",
+      "dangerous_param": null,
+      "modules": ["javax.persistence.criteria"],
+      "examples": [
+        "cb.createQuery(q + \" WHERE id = \" + id)"
+      ],
+      "cwe": ["CWE-89"],
+      "remediation": "使用CriteriaBuilder API而非拼接"
+    },
+    {
+      "name": "native_query",
+      "pattern": "@Query\\([^)]*nativeQuery\\s*=\\s*true",
+      "vuln_types": ["sqli"],
+      "description": "@Query原生SQL - SQL注入",
+      "dangerous_param": null,
+      "modules": ["org.springframework.data.jpa"],
+      "examples": [
+        "@Query(value=\"SELECT * FROM users WHERE id = \" + id, nativeQuery=true)"
+      ],
+      "cwe": ["CWE-89"],
+      "remediation": "使用@Param和:占位符"
+    },
+    {
+      "name": "mongodb_query",
+      "pattern": "(?:BasicDBObject|Query)\\.query\\(",
+      "vuln_types": ["nosql_injection"],
+      "description": "MongoDB查询 - NoSQL注入",
+      "dangerous_param": null,
+      "modules": ["com.mongodb"],
+      "examples": [
+        "collection.find(new BasicDBObject(\"name\", userName))",
+        "new Query(Criteria.where(\"id\").is(userId))"
+      ],
+      "cwe": ["CWE-943"],
+      "remediation": "使用类型转换和严格模式"
+    },
+    {
+      "name": "file_read",
+      "pattern": "(?:FileInputStream|FileReader|BufferedReader|Files\\.read(?:AllBytes|AllLines|Lines))\\(",
+      "vuln_types": ["path_traversal", "file_disclosure"],
+      "description": "文件读取 - 路径遍历",
+      "dangerous_param": 0,
+      "modules": ["java.io", "java.nio.file"],
+      "examples": [
+        "new FileInputStream(userPath)",
+        "Files.readAllLines(Paths.get(fileName))",
+        "new BufferedReader(new FileReader(file))"
+      ],
+      "cwe": ["CWE-22"],
+      "remediation": "验证并规范化文件路径"
+    },
+    {
+      "name": "file_write",
+      "pattern": "(?:FileOutputStream|FileWriter|BufferedWriter|Files\\.write)\\(",
+      "vuln_types": ["path_traversal", "arbitrary_file_write"],
+      "description": "文件写入 - 路径遍历",
+      "dangerous_param": 0,
+      "modules": ["java.io", "java.nio.file"],
+      "examples": [
+        "new FileOutputStream(userPath)",
+        "Files.write(Paths.get(fileName), data)"
+      ],
+      "cwe": ["CWE-22"],
+      "remediation": "验证并规范化文件路径"
+    },
+    {
+      "name": "files_delete",
+      "pattern": "Files\\.delete\\(",
+      "vuln_types": ["path_traversal", "file_deletion"],
+      "description": "文件删除 - 路径遍历",
+      "dangerous_param": 0,
+      "modules": ["java.nio.file"],
+      "examples": [
+        "Files.delete(Paths.get(fileName))"
+      ],
+      "cwe": ["CWE-22"],
+      "remediation": "验证并规范化文件路径"
+    },
+    {
+      "name": "httpurlconnection",
+      "pattern": "(?:HttpURLConnection|URL)\\.openConnection\\(",
+      "vuln_types": ["ssrf", "url_redirection"],
+      "description": "HttpURLConnection - SSRF",
+      "dangerous_param": null,
+      "modules": ["java.net"],
+      "examples": [
+        "new URL(userUrl).openConnection()",
+        "(HttpURLConnection) new URL(target).openConnection()"
+      ],
+      "cwe": ["CWE-918"],
+      "remediation": "验证URL，使用白名单"
+    },
+    {
+      "name": "resttemplate_exchange",
+      "pattern": "RestTemplate\\.(?:exchange|getForObject|postForObject)\\(",
+      "vuln_types": ["ssrf"],
+      "description": "RestTemplate - SSRF",
+      "dangerous_param": null,
+      "modules": ["org.springframework.web"],
+      "examples": [
+        "restTemplate.getForObject(userUrl, String.class)",
+        "restTemplate.exchange(targetUrl, HttpMethod.GET, req, String.class)"
+      ],
+      "cwe": ["CWE-918"],
+      "remediation": "验证URL，使用白名单"
+    },
+    {
+      "name": "apache_httpclient",
+      "pattern": "(?:HttpClient|CloseableHttpClient)\\.execute\\(",
+      "vuln_types": ["ssrf"],
+      "description": "Apache HttpClient - SSRF",
+      "dangerous_param": 0,
+      "modules": ["org.apache.http"],
+      "examples": [
+        "httpClient.execute(new HttpGet(userUrl))"
+      ],
+      "cwe": ["CWE-918"],
+      "remediation": "验证URL，使用白名单"
+    },
+    {
+      "name": "okhttp_request",
+      "pattern": "OkHttp(?:Client)?\\.newCall\\(",
+      "vuln_types": ["ssrf"],
+      "description": "OkHttp - SSRF",
+      "dangerous_param": null,
+      "modules": ["okhttp3"],
+      "examples": [
+        "client.newCall(new Request.Builder().url(userUrl).build()).execute()"
+      ],
+      "cwe": ["CWE-918"],
+      "remediation": "验证URL，使用白名单"
+    },
+    {
+      "name": "redirect",
+      "pattern": "(?:response\\.sendRedirect|HttpServletResponse\\.sendRedirect)\\(",
+      "vuln_types": ["open_redirect"],
+      "description": "HTTP重定向 - 开放重定向",
+      "dangerous_param": 0,
+      "modules": ["javax.servlet"],
+      "examples": [
+        "response.sendRedirect(userUrl)",
+        "httpServletResponse.sendRedirect(nextUrl)"
+      ],
+      "cwe": ["CWE-601"],
+      "remediation": "验证URL，使用白名单"
+    },
+    {
+      "name": "modelAndView",
+      "pattern": "new ModelAndView\\(",
+      "vuln_types": ["ssti"],
+      "description": "ModelAndView - 模板注入",
+      "dangerous_param": 0,
+      "modules": ["org.springframework.web"],
+      "examples": [
+        "new ModelAndView(userTemplate)",
+        "new ModelAndView(viewName)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "使用固定模板名"
+    },
+    {
+      "name": "freemarker_template",
+      "pattern": "Template\\.process\\(",
+      "vuln_types": ["ssti"],
+      "description": "FreeMarker模板 - SSTI",
+      "dangerous_param": 0,
+      "modules": ["freemarker.template"],
+      "examples": [
+        "template.process(dataModel, out)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "限制模板访问和指令"
+    },
+    {
+      "name": "velocity_evaluate",
+      "pattern": "Velocity\\.evaluate\\(",
+      "vuln_types": ["ssti"],
+      "description": "Velocity.evaluate - SSTI",
+      "dangerous_param": 0,
+      "modules": ["org.apache.velocity"],
+      "examples": [
+        "Velocity.evaluate(context, out, \"log\", userTemplate)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "使用安全配置限制"
+    },
+    {
+      "name": "thymeleaf_process",
+      "pattern": "TemplateEngine\\.process\\(",
+      "vuln_types": ["ssti"],
+      "description": "Thymeleaf.process - SSTI",
+      "dangerous_param": 0,
+      "modules": ["org.thymeleaf"],
+      "examples": [
+        "templateEngine.process(userTemplate, context)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "使用固定模板名"
+    },
+    {
+      "name": "sax_parser",
+      "pattern": "(?:SAXParser|XMLReader)\\.parse\\(",
+      "vuln_types": ["xxe"],
+      "description": "SAX解析 - XXE",
+      "dangerous_param": 0,
+      "modules": ["javax.xml.parsers", "org.xml.sax"],
+      "examples": [
+        "saxParser.parse(userFile, handler)",
+        "reader.parse(new InputSource(userStream))"
+      ],
+      "cwe": ["CWE-611"],
+      "remediation": "禁用外部实体和DTD"
+    },
+    {
+      "name": "dom_parse",
+      "pattern": "DocumentBuilder\\.(?:parse|analyze)\\(",
+      "vuln_types": ["xxe"],
+      "description": "DOM解析 - XXE",
+      "dangerous_param": 0,
+      "modules": ["javax.xml.parsers"],
+      "examples": [
+        "documentBuilder.parse(userFile)"
+      ],
+      "cwe": ["CWE-611"],
+      "remediation": "设置FEATURE_SECURE_PROCESSING"
+    },
+    {
+      "name": "xmldecoder_read",
+      "pattern": "XMLDecoder\\.readObject\\(",
+      "vuln_types": ["xxe", "deserialization"],
+      "description": "XMLDecoder - XXE",
+      "dangerous_param": null,
+      "modules": ["java.beans"],
+      "examples": [
+        "decoder.readObject()"
+      ],
+      "cwe": ["CWE-611", "CWE-502"],
+      "remediation": "避免使用XMLDecoder"
+    },
+    {
+      "name": "xstream_fromxml",
+      "pattern": "XStream\\.fromXML\\(",
+      "vuln_types": ["xxe", "deserialization"],
+      "description": "XStream.fromXML - XXE",
+      "dangerous_param": 0,
+      "modules": ["com.thoughtworks.xstream"],
+      "examples": [
+        "xstream.fromXML(userXML)"
+      ],
+      "cwe": ["CWE-611", "CWE-502"],
+      "remediation": "配置安全防护，限制类"
+    },
+    {
+      "name": "jackson_untrusted",
+      "pattern": "ObjectMapper\\.(?:readValue|readTree)\\(",
+      "vuln_types": ["deserialization"],
+      "description": "Jackson反序列化",
+      "dangerous_param": 0,
+      "modules": ["com.fasterxml.jackson"],
+      "examples": [
+        "objectMapper.readValue(json, User.class)"
+      ],
+      "cwe": ["CWE-502"],
+      "remediation": "启用PolyType限制和黑名单"
+    },
+    {
+      "name": "gson_fromjson",
+      "pattern": "Gson\\.fromJson\\(",
+      "vuln_types": ["deserialization"],
+      "description": "Gson反序列化",
+      "dangerous_param": 0,
+      "modules": ["com.google.gson"],
+      "examples": [
+        "gson.fromJson(json, User.class)"
+      ],
+      "cwe": ["CWE-502"],
+      "remediation": "使用TypeToken或ExclusionStrategy"
+    },
+    {
+      "name": "jython_interp",
+      "pattern": "PythonInterpreter\\.(?:exec|eval)\\(",
+      "vuln_types": ["rce"],
+      "description": "Jython解释器 - 代码执行",
+      "dangerous_param": 0,
+      "modules": ["org.python"],
+      "examples": [
+        "interp.exec(userScript)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "避免执行不可信代码"
+    },
+    {
+      "name": "ldap_injection",
+      "pattern": "DirContext\\.(?:search|lookup)\\(",
+      "vuln_types": ["ldap_injection"],
+      "description": "LDAP查询 - LDAP注入",
+      "dangerous_param": 0,
+      "modules": ["javax.naming"],
+      "examples": [
+        "ctx.search(\"ou=users,dc=example,dc=com\", \"(uid=\" + userId + \")\", controls)"
+      ],
+      "cwe": ["CWE-90"],
+      "remediation": "使用SearchControls和过滤器"
+    },
+    {
+      "name": "log_injection",
+      "pattern": "(?:Logger|log(?:ger)?)\\.(?:info|debug|warn|error|fatal)\\(",
+      "vuln_types": ["log_injection"],
+      "description": "日志注入 - CRLF注入",
+      "dangerous_param": 0,
+      "modules": ["org.apache.logging", "java.util.logging", "org.slf4j"],
+      "examples": [
+        "logger.info(\"User input: \" + userInput)",
+        "log.error(\"Error: \" + errorMsg)"
+      ],
+      "cwe": ["CWE-117"],
+      "remediation": "对日志输出进行清理，换行符转义"
+    },
+    {
+      "name": "response_writer",
+      "pattern": "(?:response\\.getWriter|ServletResponse\\.getWriter|PrintWriter)\\.(?:print|println|write)\\(",
+      "vuln_types": ["xss"],
+      "description": "HTTP响应写入 - XSS",
+      "dangerous_param": 0,
+      "modules": ["javax.servlet"],
+      "examples": [
+        "response.getWriter().print(userInput)",
+        "out.println(\"<div>\" + name + \"</div>\")"
+      ],
+      "cwe": ["CWE-79"],
+      "remediation": "对输出进行HTML编码"
+    },
+    {
+      "name": "jstl_out",
+      "pattern": "<c:out",
+      "vuln_types": ["xss"],
+      "description": "JSTL输出",
+      "dangerous_param": null,
+      "examples": [
+        "<c:out value=\"${param.data}\"/>"
+      ],
+      "cwe": ["CWE-79"],
+      "remediation": "设置escapeXml=true"
+    },
+    {
+      "name": "ognl_valuestack",
+      "pattern": "ValueStack\\.(?:findValue|setValue)\\(",
+      "vuln_types": ["ognl_injection"],
+      "description": "OGNL表达式执行",
+      "dangerous_param": 0,
+      "modules": ["com.opensymphony.xwork2"],
+      "examples": [
+        "valueStack.findValue(userExpression)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "禁止OGNL表达式或严格验证"
+    },
+    {
+      "name": "spel_eval",
+      "pattern": "(?:SpelExpressionParser|StandardEvaluationContext)\\.(?:parseExpression|getValue)\\(",
+      "vuln_types": ["spel_injection"],
+      "description": "SpEL表达式执行",
+      "dangerous_param": 0,
+      "modules": ["org.springframework.expression"],
+      "examples": [
+        "parser.parseExpression(userExpr).getValue(context)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "使用SimpleEvaluationContext"
+    },
+    {
+      "name": "mvel_eval",
+      "pattern": "MVEL\\.eval\\(",
+      "vuln_types": ["mvel_injection"],
+      "description": "MVEL表达式执行",
+      "dangerous_param": 0,
+      "modules": ["org.mvel"],
+      "examples": [
+        "MVEL.eval(userExpression)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "限制表达式上下文"
+    }
+  ]
+}

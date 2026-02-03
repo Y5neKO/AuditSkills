@@ -1,0 +1,199 @@
+{
+  "audit_metadata": {
+    "timestamp": "2025-01-15T10:30:00Z",
+    "project_path": "/path/to/project",
+    "framework": "Express.js",
+    "language": "JavaScript",
+    "audit_mode": "forward",
+    "audit_duration": "45s"
+  },
+  "vulnerabilities": [
+    {
+      "vuln_id": "VULN-001",
+      "vuln_type": "sqli",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "title": "SQL注入漏洞 - /api/users/:id",
+      "cwe": "CWE-89",
+
+      "entry_point": {
+        "method": "GET",
+        "path": "/api/users/:id",
+        "file": "routes/users.js",
+        "line": 45
+      },
+
+      "call_chain": [
+        {
+          "step": 1,
+          "location": "routes/users.js:46",
+          "code": "const userId = req.params.id",
+          "type": "SOURCE",
+          "description": "HTTP路径参数，用户可控",
+          "variable": "userId",
+          "tainted": true
+        },
+        {
+          "step": 2,
+          "location": "routes/users.js:47",
+          "code": "const query = `SELECT * FROM users WHERE id = ${userId}`",
+          "type": "PROPAGATION",
+          "description": "污点传播，直接拼接SQL",
+          "variable": "query",
+          "tainted": true
+        },
+        {
+          "step": 3,
+          "location": "routes/users.js:49",
+          "code": "await db.query(query)",
+          "type": "SINK",
+          "description": "SQL执行，存在注入点",
+          "function": "db.query",
+          "vuln_type": "sqli"
+        }
+      ],
+
+      "sanitizers_checked": [
+        {
+          "function": "escape",
+          "present": false,
+          "bypass_possible": false
+        },
+        {
+          "function": "parameterized_query",
+          "present": false,
+          "bypass_possible": false
+        }
+      ],
+
+      "poc": {
+        "description": "通过注入恶意SQL语句绕过认证或提取数据",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "http://localhost:3000/api/users/1' OR '1'='1",
+            "headers": {
+              "User-Agent": "Mozilla/5.0",
+              "Accept": "application/json"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "http://localhost:3000/api/users/1' UNION SELECT NULL,username,password FROM users--",
+            "headers": {
+              "User-Agent": "Mozilla/5.0"
+            }
+          }
+        ],
+        "expected_behavior": "返回所有用户数据或泄露敏感信息",
+        "verification_method": "检查响应中是否包含多个用户记录或敏感字段"
+      },
+
+      "remediation": {
+        "recommendation": "使用参数化查询",
+        "code_example": "await db.query('SELECT * FROM users WHERE id = ?', [userId])",
+        "references": [
+          "OWASP SQL Injection Prevention Cheat Sheet",
+          "CWE-89: SQL Injection"
+        ]
+      },
+
+      "references": [
+        "CWE-89: SQL Injection",
+        "OWASP Top 10 2021: A03:2021 – Injection",
+        "https://owasp.org/www-community/attacks/SQL_Injection"
+      ]
+    },
+    {
+      "vuln_id": "VULN-002",
+      "vuln_type": "xss",
+      "severity": "HIGH",
+      "confidence": "MEDIUM",
+      "title": "反射型XSS - /search?q=",
+      "cwe": "CWE-79",
+
+      "entry_point": {
+        "method": "GET",
+        "path": "/search",
+        "file": "routes/search.js",
+        "line": 23
+      },
+
+      "call_chain": [
+        {
+          "step": 1,
+          "location": "routes/search.js:24",
+          "code": "const query = req.query.q",
+          "type": "SOURCE",
+          "variable": "query",
+          "tainted": true
+        },
+        {
+          "step": 2,
+          "location": "routes/search.js:28",
+          "code": "res.send(`<div>Results for: ${query}</div>`)",
+          "type": "SINK",
+          "function": "res.send",
+          "vuln_type": "xss"
+        }
+      ],
+
+      "poc": {
+        "description": "通过注入JavaScript代码实现XSS攻击",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "http://localhost:3000/search?q=<script>alert(document.cookie)</script>",
+            "headers": {}
+          }
+        ],
+        "expected_behavior": "执行注入的JavaScript代码，弹出cookie",
+        "verification_method": "检查浏览器是否执行alert弹窗"
+      },
+
+      "remediation": {
+        "recommendation": "对用户输入进行HTML转义",
+        "code_example": "res.send(`<div>Results for: ${escape(query)}</div>`)"
+      }
+    }
+  ],
+
+  "statistics": {
+    "total_vulnerabilities": 2,
+    "by_severity": {
+      "CRITICAL": 1,
+      "HIGH": 1,
+      "MEDIUM": 0,
+      "LOW": 0
+    },
+    "by_type": {
+      "sqli": 1,
+      "xss": 1
+    },
+    "entry_points_analyzed": 15,
+    "sources_found": 23,
+    "sinks_found": 12
+  },
+
+  "attack_chains": [
+    {
+      "chain_id": "CHAIN-001",
+      "name": "认证绕过 → 数据泄露",
+      "description": "利用SQL注入绕过登录，获取敏感数据",
+      "vulnerabilities": ["VULN-001"],
+      "steps": [
+        {
+          "order": 1,
+          "vuln_id": "VULN-001",
+          "description": "使用SQL注入绕过登录验证"
+        },
+        {
+          "order": 2,
+          "vuln_id": "VULN-001",
+          "description": "提取所有用户数据"
+        }
+      ],
+      "impact": "完全数据库访问，所有用户数据泄露"
+    }
+  ]
+}

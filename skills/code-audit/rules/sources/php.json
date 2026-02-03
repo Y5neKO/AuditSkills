@@ -1,0 +1,356 @@
+{
+  "language": "PHP",
+  "framework": "Laravel",
+  "description": "PHP Web框架 HTTP入口点 - 用户可控输入",
+
+  "sources": [
+    {
+      "name": "php_get",
+      "pattern": "\\$_GET\\[",
+      "type": "http_get",
+      "description": "PHP $_GET 超全局变量 - URL查询参数",
+      "frameworks": ["all"],
+      "examples": [
+        "$name = $_GET['name']",
+        "$id = $_GET['id']"
+      ]
+    },
+    {
+      "name": "php_post",
+      "pattern": "\\$_POST\\[",
+      "type": "http_post",
+      "description": "PHP $_POST 超全局变量 - POST表单数据",
+      "frameworks": ["all"],
+      "examples": [
+        "$username = $_POST['username']",
+        "$email = $_POST['email']"
+      ]
+    },
+    {
+      "name": "php_request",
+      "pattern": "\\$_REQUEST\\[",
+      "type": "http_request",
+      "description": "PHP $_REQUEST 超全局变量 - GET+POST合并",
+      "frameworks": ["all"],
+      "examples": [
+        "$param = $_REQUEST['param']"
+      ]
+    },
+    {
+      "name": "php_cookie",
+      "pattern": "\\$_COOKIE\\[",
+      "type": "http_cookie",
+      "description": "PHP $_COOKIE 超全局变量 - Cookie数据",
+      "frameworks": ["all"],
+      "examples": [
+        "$token = $_COOKIE['token']",
+        "$session = $_COOKIE['session_id']"
+      ]
+    },
+    {
+      "name": "php_server",
+      "pattern": "\\$_SERVER\\[",
+      "type": "http_server",
+      "description": "PHP $_SERVER 超全局变量 - 服务器和环境信息",
+      "frameworks": ["all"],
+      "examples": [
+        "$ip = $_SERVER['REMOTE_ADDR']",
+        "$ua = $_SERVER['HTTP_USER_AGENT']",
+        "$header = $_SERVER['HTTP_AUTHORIZATION']"
+      ]
+    },
+    {
+      "name": "php_files",
+      "pattern": "\\$_FILES\\[",
+      "type": "http_files",
+      "description": "PHP $_FILES 超全局变量 - 上传的文件",
+      "frameworks": ["all"],
+      "examples": [
+        "$file = $_FILES['upload']",
+        "$filename = $_FILES['file']['name']"
+      ]
+    },
+    {
+      "name": "php_env",
+      "pattern": "\\$_ENV\\[",
+      "type": "http_env",
+      "description": "PHP $_ENV 超全局变量 - 环境变量",
+      "frameworks": ["all"],
+      "examples": [
+        "$value = $_ENV['key']"
+      ]
+    },
+    {
+      "name": "php_http_get_vars",
+      "pattern": "\\$HTTP_GET_VARS\\[",
+      "type": "http_get_vars",
+      "description": "PHP $HTTP_GET_VARS - 旧版GET变量",
+      "frameworks": ["all"],
+      "examples": [
+        "$name = $HTTP_GET_VARS['name']"
+      ]
+    },
+    {
+      "name": "php_http_post_vars",
+      "pattern": "\\$HTTP_POST_VARS\\[",
+      "type": "http_post_vars",
+      "description": "PHP $HTTP_POST_VARS - 旧版POST变量",
+      "frameworks": ["all"],
+      "examples": [
+        "$username = $HTTP_POST_VARS['username']"
+      ]
+    },
+    {
+      "name": "laravel_request_input",
+      "pattern": "\\$request->input\\(",
+      "type": "laravel_input",
+      "description": "Laravel Request::input() - 获取请求参数",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$name = $request->input('name')",
+        "$id = $request->input('id', 1)"
+      ]
+    },
+    {
+      "name": "laravel_request_get",
+      "pattern": "\\$request->get\\(",
+      "type": "laravel_get",
+      "description": "Laravel Request::get() - 获取请求参数",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$name = $request->get('name')"
+      ]
+    },
+    {
+      "name": "laravel_request_query",
+      "pattern": "\\$request->query\\(",
+      "type": "laravel_query",
+      "description": "Laravel Request::query() - 获取查询参数",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$search = $request->query('search')"
+      ]
+    },
+    {
+      "name": "laravel_request_post",
+      "pattern": "\\$request->post\\(",
+      "type": "laravel_post",
+      "description": "Laravel Request::post() - 获取POST数据",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$username = $request->post('username')"
+      ]
+    },
+    {
+      "name": "laravel_request_json",
+      "pattern": "\\$request->json\\(",
+      "type": "laravel_json",
+      "description": "Laravel Request::json() - 获取JSON数据",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$data = $request->json()->all()"
+      ]
+    },
+    {
+      "name": "laravel_request_all",
+      "pattern": "\\$request->all\\(",
+      "type": "laravel_all",
+      "description": "Laravel Request::all() - 获取所有请求数据",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$data = $request->all()"
+      ]
+    },
+    {
+      "name": "laravel_request_only",
+      "pattern": "\\$request->only\\(",
+      "type": "laravel_only",
+      "description": "Laravel Request::only() - 获取指定字段",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$data = $request->only(['name', 'email'])"
+      ]
+    },
+    {
+      "name": "laravel_request_except",
+      "pattern": "\\$request->except\\(",
+      "type": "laravel_except",
+      "description": "Laravel Request::except() - 排除指定字段",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$data = $request->except(['password'])"
+      ]
+    },
+    {
+      "name": "laravel_request_header",
+      "pattern": "\\$request->header\\(",
+      "type": "laravel_header",
+      "description": "Laravel Request::header() - 获取请求头",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$auth = $request->header('Authorization')",
+        "$token = $request->header('X-Auth-Token')"
+      ]
+    },
+    {
+      "name": "laravel_request_cookie",
+      "pattern": "\\$request->cookie\\(",
+      "type": "laravel_cookie",
+      "description": "Laravel Request::cookie() - 获取Cookie",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$token = $request->cookie('token')"
+      ]
+    },
+    {
+      "name": "laravel_request_file",
+      "pattern": "\\$request->file\\(",
+      "type": "laravel_file",
+      "description": "Laravel Request::file() - 获取上传文件",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$file = $request->file('upload')"
+      ]
+    },
+    {
+      "name": "laravel_request_hasFile",
+      "pattern": "\\$request->hasFile\\(",
+      "type": "laravel_has_file",
+      "description": "Laravel Request::hasFile() - 检查文件",
+      "frameworks": ["laravel"],
+      "examples": [
+        "if ($request->hasFile('upload'))"
+      ]
+    },
+    {
+      "name": "laravel_route_param",
+      "pattern": "\\$request->route\\(",
+      "type": "laravel_route",
+      "description": "Laravel Request::route() - 获取路由参数",
+      "frameworks": ["laravel"],
+      "examples": [
+        "$id = $request->route('id')"
+      ]
+    },
+    {
+      "name": "symfony_request_get",
+      "pattern": "\\$request->get\\(",
+      "type": "symfony_get",
+      "description": "Symfony Request::get() - 获取请求参数",
+      "frameworks": ["symfony"],
+      "examples": [
+        "$name = $request->get('name')"
+      ]
+    },
+    {
+      "name": "symfony_request_query",
+      "pattern": "\\$request->query->get\\(",
+      "type": "symfony_query",
+      "description": "Symfony Request::query->get() - 获取查询参数",
+      "frameworks": ["symfony"],
+      "examples": [
+        "$search = $request->query->get('search')"
+      ]
+    },
+    {
+      "name": "symfony_request_request",
+      "pattern": "\\$request->request->get\\(",
+      "type": "symfony_request",
+      "description": "Symfony Request::request->get() - 获取POST数据",
+      "frameworks": ["symfony"],
+      "examples": [
+        "$username = $request->request->get('username')"
+      ]
+    },
+    {
+      "name": "symfony_request_files",
+      "pattern": "\\$request->files->get\\(",
+      "type": "symfony_files",
+      "description": "Symfony Request::files->get() - 获取上传文件",
+      "frameworks": ["symfony"],
+      "examples": [
+        "$file = $request->files->get('upload')"
+      ]
+    },
+    {
+      "name": "symfony_request_headers",
+      "pattern": "\\$request->headers->get\\(",
+      "type": "symfony_headers",
+      "description": "Symfony Request::headers->get() - 获取请求头",
+      "frameworks": ["symfony"],
+      "examples": [
+        "$auth = $request->headers->get('Authorization')"
+      ]
+    },
+    {
+      "name": "symfony_request_cookies",
+      "pattern": "\\$request->cookies->get\\(",
+      "type": "symfony_cookies",
+      "description": "Symfony Request::cookies->get() - 获取Cookie",
+      "frameworks": ["symfony"],
+      "examples": [
+        "$token = $request->cookies->get('token')"
+      ]
+    },
+    {
+      "name": "codeigniter_input_post",
+      "pattern": "\\$this->input->post\\(",
+      "type": "ci_input_post",
+      "description": "CodeIgniter Input::post() - 获取POST数据",
+      "frameworks": ["codeigniter"],
+      "examples": [
+        "$username = $this->input->post('username')"
+      ]
+    },
+    {
+      "name": "codeigniter_input_get",
+      "pattern": "\\$this->input->get\\(",
+      "type": "ci_input_get",
+      "description": "CodeIgniter Input::get() - 获取GET数据",
+      "frameworks": ["codeigniter"],
+      "examples": [
+        "$search = $this->input->get('search')"
+      ]
+    },
+    {
+      "name": "codeigniter_input_get_post",
+      "pattern": "\\$this->input->get_post\\(",
+      "type": "ci_input_get_post",
+      "description": "CodeIgniter Input::get_post() - 获取GET+POST数据",
+      "frameworks": ["codeigniter"],
+      "examples": [
+        "$param = $this->input->get_post('param')"
+      ]
+    },
+    {
+      "name": "codeigniter_input_cookie",
+      "pattern": "\\$this->input->cookie\\(",
+      "type": "ci_input_cookie",
+      "description": "CodeIgniter Input::cookie() - 获取Cookie",
+      "frameworks": ["codeigniter"],
+      "examples": [
+        "$token = $this->input->cookie('token')"
+      ]
+    },
+    {
+      "name": "codeigniter_input_server",
+      "pattern": "\\$this->input->server\\(",
+      "type": "ci_input_server",
+      "description": "CodeIgniter Input::server() - 获取服务器变量",
+      "frameworks": ["codeigniter"],
+      "examples": [
+        "$ua = $this->input->server('HTTP_USER_AGENT')"
+      ]
+    },
+    {
+      "name": "codeigniter_input_header",
+      "pattern": "\\$this->input->get_request_header\\(",
+      "type": "ci_input_header",
+      "description": "CodeIgniter Input::get_request_header() - 获取请求头",
+      "frameworks": ["codeigniter"],
+      "examples": [
+        "$auth = $this->input->get_request_header('Authorization')"
+      ]
+    }
+  ]
+}

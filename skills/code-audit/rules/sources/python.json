@@ -1,0 +1,334 @@
+{
+  "language": "Python",
+  "framework": "Flask",
+  "description": "Python Web框架 HTTP入口点 - 用户可控输入",
+
+  "sources": [
+    {
+      "name": "flask_request_args_get",
+      "pattern": "request\\.args\\.get\\(",
+      "type": "http_query",
+      "description": "Flask URL查询参数 (?key=value)",
+      "frameworks": ["flask"],
+      "examples": [
+        "name = request.args.get('name', '')",
+        "search = request.args.get('q')"
+      ]
+    },
+    {
+      "name": "flask_request_args_dict",
+      "pattern": "request\\.args\\[",
+      "type": "http_query_dict",
+      "description": "Flask URL查询参数字典访问",
+      "frameworks": ["flask"],
+      "examples": [
+        "name = request.args['name']"
+      ]
+    },
+    {
+      "name": "flask_request_form_get",
+      "pattern": "request\\.form\\.get\\(",
+      "type": "http_form",
+      "description": "Flask表单POST数据",
+      "frameworks": ["flask"],
+      "examples": [
+        "username = request.form.get('username')",
+        "email = request.form.get('email')"
+      ]
+    },
+    {
+      "name": "flask_request_form_dict",
+      "pattern": "request\\.form\\[",
+      "type": "http_form_dict",
+      "description": "Flask表单字典访问",
+      "frameworks": ["flask"],
+      "examples": [
+        "username = request.form['username']"
+      ]
+    },
+    {
+      "name": "flask_request_json",
+      "pattern": "request\\.get_json\\(",
+      "type": "http_json",
+      "description": "Flask JSON请求体",
+      "frameworks": ["flask"],
+      "examples": [
+        "data = request.get_json()",
+        "payload = request.get_json(force=True)"
+      ]
+    },
+    {
+      "name": "flask_request_json_attr",
+      "pattern": "request\\.json",
+      "type": "http_json_attr",
+      "description": "Flask JSON请求体属性",
+      "frameworks": ["flask"],
+      "examples": [
+        "data = request.json",
+        "name = request.json.get('name')"
+      ]
+    },
+    {
+      "name": "flask_request_values",
+      "pattern": "request\\.values",
+      "type": "http_values",
+      "description": "Flask GET+POST合并参数",
+      "frameworks": ["flask"],
+      "examples": [
+        "param = request.values.get('param')"
+      ]
+    },
+    {
+      "name": "flask_request_files",
+      "pattern": "request\\.files",
+      "type": "http_files",
+      "description": "Flask上传的文件",
+      "frameworks": ["flask"],
+      "examples": [
+        "file = request.files['upload']",
+        "file = request.files.get('file')"
+      ]
+    },
+    {
+      "name": "flask_request_cookies",
+      "pattern": "request\\.cookies",
+      "type": "http_cookies",
+      "description": "Flask Cookie数据",
+      "frameworks": ["flask"],
+      "examples": [
+        "token = request.cookies.get('token')",
+        "session = request.cookies['session_id']"
+      ]
+    },
+    {
+      "name": "flask_request_headers",
+      "pattern": "request\\.headers",
+      "type": "http_headers",
+      "description": "Flask HTTP请求头",
+      "frameworks": ["flask"],
+      "examples": [
+        "auth = request.headers.get('Authorization')",
+        "token = request.headers.get('X-Auth-Token')"
+      ]
+    },
+    {
+      "name": "flask_request_view_args",
+      "pattern": "request\\.view_args",
+      "type": "http_view_args",
+      "description": "Flask URL路径参数",
+      "frameworks": ["flask"],
+      "examples": [
+        "id = request.view_args['id']",
+        "user_id = request.view_args.get('user_id')"
+      ]
+    },
+    {
+      "name": "flask_route_param",
+      "pattern": "<(\\w+):?\\s*\\w+>",
+      "type": "route_param",
+      "description": "Flask路由参数装饰器",
+      "frameworks": ["flask"],
+      "examples": [
+        "@app.route('/user/<int:id>')",
+        "@app.route('/post/<slug:post_slug>')"
+      ]
+    },
+    {
+      "name": "django_request_GET_get",
+      "pattern": "request\\.GET\\.get\\(",
+      "type": "http_query",
+      "description": "Django URL查询参数",
+      "frameworks": ["django"],
+      "examples": [
+        "name = request.GET.get('name', '')",
+        "page = request.GET.get('page', 1)"
+      ]
+    },
+    {
+      "name": "django_request_POST_get",
+      "pattern": "request\\.POST\\.get\\(",
+      "type": "http_form",
+      "description": "Django POST表单数据",
+      "frameworks": ["django"],
+      "examples": [
+        "username = request.POST.get('username')",
+        "email = request.POST.get('email')"
+      ]
+    },
+    {
+      "name": "django_request_GET_dict",
+      "pattern": "request\\.GET\\[",
+      "type": "http_query_dict",
+      "description": "Django查询参数字典访问",
+      "frameworks": ["django"],
+      "examples": [
+        "name = request.GET['name']"
+      ]
+    },
+    {
+      "name": "django_request_POST_dict",
+      "pattern": "request\\.POST\\[",
+      "type": "http_form_dict",
+      "description": "Django POST数据字典访问",
+      "frameworks": ["django"],
+      "examples": [
+        "username = request.POST['username']"
+      ]
+    },
+    {
+      "name": "django_request_body",
+      "pattern": "request\\.body",
+      "type": "http_body",
+      "description": "Django原始请求体",
+      "frameworks": ["django"],
+      "examples": [
+        "data = json.loads(request.body)"
+      ]
+    },
+    {
+      "name": "django_request_DATA",
+      "pattern": "request\\.DATA",
+      "type": "http_data",
+      "description": "Django REST Framework 请求数据",
+      "frameworks": ["django-rest-framework"],
+      "examples": [
+        "data = request.DATA",
+        "serializer = MySerializer(data=request.DATA)"
+      ]
+    },
+    {
+      "name": "django_request_FILES",
+      "pattern": "request\\.FILES",
+      "type": "http_files",
+      "description": "Django上传的文件",
+      "frameworks": ["django"],
+      "examples": [
+        "file = request.FILES['upload']",
+        "file = request.FILES.get('file')"
+      ]
+    },
+    {
+      "name": "django_request_COOKIES",
+      "pattern": "request\\.COOKIES",
+      "type": "http_cookies",
+      "description": "Django Cookie数据",
+      "frameworks": ["django"],
+      "examples": [
+        "token = request.COOKIES.get('token')",
+        "session = request.COOKIES['sessionid']"
+      ]
+    },
+    {
+      "name": "django_request_META",
+      "pattern": "request\\.META",
+      "type": "http_headers",
+      "description": "Django HTTP头和元数据",
+      "frameworks": ["django"],
+      "examples": [
+        "auth = request.META.get('HTTP_AUTHORIZATION')",
+        "ip = request.META.get('REMOTE_ADDR')"
+      ]
+    },
+    {
+      "name": "django_path_kwarg",
+      "pattern": "<(\\w+):?\\s*\\w+>",
+      "type": "path_kwarg",
+      "description": "Django URL路径参数",
+      "frameworks": ["django"],
+      "examples": [
+        "path('user/<int:id>/', views.user_detail)",
+        "re_path(r'^post/(?P<slug>[-\\w]+)/$', views.post_detail)"
+      ]
+    },
+    {
+      "name": "fastapi_query_param",
+      "pattern": "Query\\(",
+      "type": "query_param_decorator",
+      "description": "FastAPI查询参数装饰器",
+      "frameworks": ["fastapi"],
+      "examples": [
+        "async def search(q: str = Query(None))"
+      ]
+    },
+    {
+      "name": "fastapi_path_param",
+      "pattern": "Path\\(",
+      "type": "path_param_decorator",
+      "description": "FastAPI路径参数装饰器",
+      "frameworks": ["fastapi"],
+      "examples": [
+        "async def get_user(user_id: int = Path(...))"
+      ]
+    },
+    {
+      "name": "fastapi_body_param",
+      "pattern": "Body\\(",
+      "type": "body_param_decorator",
+      "description": "FastAPI请求体装饰器",
+      "frameworks": ["fastapi"],
+      "examples": [
+        "async def create(item: Item = Body(...))"
+      ]
+    },
+    {
+      "name": "fastapi_form_param",
+      "pattern": "Form\\(",
+      "type": "form_param_decorator",
+      "description": "FastAPI表单装饰器",
+      "frameworks": ["fastapi"],
+      "examples": [
+        "async def login(username: str = Form(...))"
+      ]
+    },
+    {
+      "name": "fastapi_file_param",
+      "pattern": "File\\(",
+      "type": "file_param_decorator",
+      "description": "FastAPI文件上传装饰器",
+      "frameworks": ["fastapi"],
+      "examples": [
+        "async def upload(file: UploadFile = File(...))"
+      ]
+    },
+    {
+      "name": "fastapi_request_json",
+      "pattern": "await request\\.json\\(",
+      "type": "request_json",
+      "description": "FastAPI JSON请求体",
+      "frameworks": ["fastapi"],
+      "examples": [
+        "data = await request.json()"
+      ]
+    },
+    {
+      "name": "tornado_get_argument",
+      "pattern": "get_argument\\(",
+      "type": "get_argument",
+      "description": "Tornado获取请求参数",
+      "frameworks": ["tornado"],
+      "examples": [
+        "name = self.get_argument('name', '')"
+      ]
+    },
+    {
+      "name": "tornado_get_query_argument",
+      "pattern": "get_query_argument\\(",
+      "type": "query_argument",
+      "description": "Tornado获取查询参数",
+      "frameworks": ["tornado"],
+      "examples": [
+        "search = self.get_query_argument('q')"
+      ]
+    },
+    {
+      "name": "tornado_get_body_argument",
+      "pattern": "get_body_argument\\(",
+      "type": "body_argument",
+      "description": "Tornado获取请求体参数",
+      "frameworks": ["tornado"],
+      "examples": [
+        "username = self.get_body_argument('username')"
+      ]
+    }
+  ]
+}
