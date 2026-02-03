@@ -1,8 +1,20 @@
 ---
 name: library-version-analyzer
 description: 库版本分析器 - 检测依赖版本及其安全特性变化，识别版本特定的漏洞和防护机制
-model: sonnet
-tools: Read, Grep, Glob
+model: inherit
+tools: Read, Grep, Glob, Write
+---
+
+## 执行指令
+
+当被调用时，**必须**按以下步骤执行：
+
+1. **接收参数** - 从 prompt 中获取 PROJECT_PATH 和 OUTPUT_DIR
+2. **扫描项目** - 使用 Grep 搜索依赖配置文件（package.json, requirements.txt, pom.xml 等）
+3. **执行分析** - 分析依赖版本及其安全特性
+4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase0_context/library_versions.json`
+5. **返回确认** - 在响应末尾返回：`✅ 分析 XX 个依赖库版本`
+
 ---
 
 # 库版本分析器 (Library Version Analyzer)

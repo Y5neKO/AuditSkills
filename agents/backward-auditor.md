@@ -1,8 +1,20 @@
 ---
 name: backward-auditor
 description: 反向审计Agent - 从危险函数(sink)反向追溯数据来源(source)
-model: sonnet
+model: inherit
 tools: Read, Grep, Glob, Write
+---
+
+## 执行指令
+
+当被调用时，**必须**按以下步骤执行：
+
+1. **接收参数** - 从 prompt 中获取 PROJECT_PATH、OUTPUT_DIR 和输入文件路径
+2. **读取输入** - 使用 Read 工具读取 sink_points.json
+3. **执行追踪** - 从 Sink 点反向追溯到 Source 点
+4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase2_technical_audit/backward_traces.json`
+5. **返回确认** - 在响应末尾返回：`✅ 反向追踪 XX 条数据流路径`
+
 ---
 
 # 反向审计Agent (Backward Auditor)

@@ -1,8 +1,20 @@
 ---
 name: report-generator
 description: 报告生成器 - 生成结构化的漏洞审计报告
-model: sonnet
+model: inherit
 tools: Write, Read
+---
+
+## 执行指令
+
+当被调用时，**必须**按以下步骤执行：
+
+1. **接收参数** - 从 prompt 中获取 PROJECT_PATH、OUTPUT_DIR 和输入文件路径
+2. **读取输入** - 使用 Read 工具读取所有阶段的结果文件
+3. **执行分析** - 整合所有分析结果
+4. **写入产物** - 使用 Write 工具将报告写入 `{OUTPUT_DIR}/report.md` 和 `report.json`
+5. **返回确认** - 在响应末尾返回：`✅ 报告已生成`
+
 ---
 
 # 报告生成器 (Report Generator)

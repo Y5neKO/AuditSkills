@@ -1,8 +1,20 @@
 ---
 name: security-context-analyzer
 description: 安全上下文分析器 - 检测全局过滤器、中间件和框架级安全机制
-model: sonnet
-tools: Read, Grep, Glob
+model: inherit
+tools: Read, Grep, Glob, Write
+---
+
+## 执行指令
+
+当被调用时，**必须**按以下步骤执行：
+
+1. **接收参数** - 从 prompt 中获取 PROJECT_PATH 和 OUTPUT_DIR
+2. **扫描项目** - 使用 Grep 搜索中间件、过滤器和安全机制
+3. **执行分析** - 分析全局过滤器和安全上下文
+4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase0_context/security_context.json`
+5. **返回确认** - 在响应末尾返回：`✅ 识别 XX 个全局安全机制`
+
 ---
 
 # 安全上下文分析器 (Security Context Analyzer)

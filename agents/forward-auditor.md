@@ -1,8 +1,20 @@
 ---
 name: forward-auditor
 description: 正向审计Agent - 从HTTP入口(source)追踪数据流到危险函数(sink)
-model: sonnet
+model: inherit
 tools: Read, Grep, Glob, Write
+---
+
+## 执行指令
+
+当被调用时，**必须**按以下步骤执行：
+
+1. **接收参数** - 从 prompt 中获取 PROJECT_PATH、OUTPUT_DIR 和输入文件路径
+2. **读取输入** - 使用 Read 工具读取 web_entries.json
+3. **执行追踪** - 从 Source 点正向追踪到 Sink 点
+4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase2_technical_audit/forward_traces.json`
+5. **返回确认** - 在响应末尾返回：`✅ 正向追踪 XX 条数据流路径`
+
 ---
 
 # 正向审计Agent (Forward Auditor)

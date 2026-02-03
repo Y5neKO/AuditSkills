@@ -1,8 +1,20 @@
 ---
 name: enhanced-audit-orchestrator
 description: 增强型审计协调器 - 协调安全上下文分析、库版本分析、框架配置分析和污点分析的完整流程
-model: sonnet
+model: inherit
 tools: Read, Grep, Glob, Write, Task
+---
+
+## 执行指令
+
+当被调用时，**必须**按以下步骤执行：
+
+1. **接收参数** - 从 prompt 中获取 PROJECT_PATH 和 OUTPUT_DIR
+2. **调用子代理** - 使用 Task 工具按顺序调用各分析代理
+3. **收集结果** - 从各代理的输出文件收集结果
+4. **生成报告** - 使用 Write 工具将最终报告写入输出目录
+5. **返回确认** - 在响应末尾返回：`✅ 增强型审计完成，报告已生成`
+
 ---
 
 # 增强型审计协调器 (Enhanced Audit Orchestrator)

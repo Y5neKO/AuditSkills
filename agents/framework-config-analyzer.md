@@ -1,8 +1,20 @@
 ---
 name: framework-config-analyzer
 description: 框架配置分析器 - 分析框架安全配置、设置和运行时安全特性
-model: sonnet
-tools: Read, Grep, Glob
+model: inherit
+tools: Read, Grep, Glob, Write
+---
+
+## 执行指令
+
+当被调用时，**必须**按以下步骤执行：
+
+1. **接收参数** - 从 prompt 中获取 PROJECT_PATH 和 OUTPUT_DIR
+2. **扫描项目** - 使用 Grep 搜索框架配置文件
+3. **执行分析** - 分析框架安全配置和运行时设置
+4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase0_context/framework_config.json`
+5. **返回确认** - 在响应末尾返回：`✅ 分析框架配置完成`
+
 ---
 
 # 框架配置分析器 (Framework Config Analyzer)
