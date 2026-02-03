@@ -12,7 +12,7 @@ tools: Read, Grep, Glob, Bash, Write
 1. **接收参数** - 从 prompt 中获取 PROJECT_PATH、OUTPUT_DIR 和输入文件路径
 2. **读取输入** - 使用 Read 工具读取 web_entries.json 和 sink_points.json
 3. **执行追踪** - 从 Source 点正向追踪到 Sink 点
-4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase2.5_forward_trace/forward_traces.json`
+4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase2_5_forward_trace/forward_traces.json`
 5. **返回确认** - 在响应末尾返回：`✅ 正向追踪 XX 条数据流路径`
 
 ---

@@ -12,7 +12,7 @@ tools: Read, Grep, Glob, Bash, Write
 1. **接收参数** - 从 prompt 中获取 PROJECT_PATH、OUTPUT_DIR 和输入文件路径
 2. **读取输入** - 使用 Read 工具读取 web_entries.json
 3. **执行分析** - 分析每个入口函数的业务逻辑
-4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase1.5_entry_analysis/entry_functions.json`
+4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase1_5_entry_analysis/entry_functions.json`
 5. **返回确认** - 在响应末尾返回：`✅ 分析 XX 个入口函数`
 
 ---

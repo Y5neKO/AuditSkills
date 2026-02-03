@@ -14,7 +14,7 @@ tools: Read, Grep, Glob, Bash, Write
 1. **接收参数** - 从 prompt 中获取 PROJECT_PATH 和 OUTPUT_DIR
 2. **扫描项目** - 使用 Grep/Glob 搜索所有路由定义
 3. **分析结果** - 解析提取的代码，构建入口点清单
-4. **写入产物** - 使用 Write 工具将 JSON 结果写入文件
+4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase1_discovery/web_entries.json`
 5. **返回确认** - 在响应末尾返回简短确认
 
 **输出文件路径**: `{OUTPUT_DIR}/web_entries.json`

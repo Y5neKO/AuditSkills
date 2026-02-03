@@ -181,7 +181,7 @@ Task(subagent_type="business-logic-auditor",
 ```javascript
 Task(subagent_type="attack-chain-orchestrator",
      prompt="组合已发现的所有漏洞，构建完整的攻击链场景。
-              输入: phase2_technical_audit/validated_vulns.json 和 phase3_business_audit/
+              输入: phase2_technical_audit/correlated_vulns.json 和 phase3_business_audit/
               输出目录: .workspace/code-audit/phase4_attack_chains/
               输出文件: attack_chains.json
               完成后返回: ✅ 构建 XX 条攻击链")

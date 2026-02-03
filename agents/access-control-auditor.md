@@ -12,7 +12,7 @@ tools: Read, Grep, Glob, Bash, Write
 1. **接收参数** - 从 prompt 中获取 PROJECT_PATH、OUTPUT_DIR 和输入文件路径
 2. **读取输入** - 使用 Read 工具读取 data_models.json 和 web_entries.json
 3. **执行分析** - 分析权限检查逻辑，发现越权漏洞
-4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase3_business_audit/access_control_vulns.json`
+4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase3_business_audit/access_control.json`
 5. **返回确认** - 在响应末尾返回：`✅ 发现 XX 个越权漏洞`
 
 ---

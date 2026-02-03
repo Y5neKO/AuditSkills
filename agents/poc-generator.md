@@ -10,7 +10,7 @@ tools: Write, Read
 当被调用时，**必须**按以下步骤执行：
 
 1. **接收参数** - 从 prompt 中获取 PROJECT_PATH、OUTPUT_DIR 和输入文件路径
-2. **读取输入** - 使用 Read 工具读取 validated_vulns.json
+2. **读取输入** - 使用 Read 工具读取 correlated_vulns.json
 3. **执行分析** - 根据漏洞调用链生成 PoC
 4. **写入产物** - 使用 Write 工具将结果写入 `{OUTPUT_DIR}/phase2_technical_audit/pocs/`
 5. **返回确认** - 在响应末尾返回：`✅ 生成 XX 个PoC`
