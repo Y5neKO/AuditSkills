@@ -43,9 +43,18 @@
 
 ## 使用
 
+按scope
+
+### 项目
+
 ```sh
-cp -r AuditSkills/agent .claude
-cp -r AuditSkills/skills .claude
+cp -r AuditSkills/skills/code-audit .claude/skills/code-audit
+```
+
+### 全局
+
+```sh
+cp -r AuditSkills/skills/code-audit ~/.claude/skills/code-audit
 ```
 
 
