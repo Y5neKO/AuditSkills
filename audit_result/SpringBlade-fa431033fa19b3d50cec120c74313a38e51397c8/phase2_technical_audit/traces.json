@@ -1,0 +1,349 @@
+{
+  "scan_date": "2025-02-03",
+  "project_name": "SpringBlade",
+  "data_flow_analysis": {
+    "summary": {
+      "total_traces": 15,
+      "confirmed_vulnerabilities": 8,
+      "potential_vulnerabilities": 7
+    },
+    "vulnerability_traces": [
+      {
+        "vulnerability_id": "SSRF_001",
+        "cwe": "CWE-918",
+        "severity": "HIGH",
+        "title": "开放重定向 - OAuth端点",
+        "source": {
+          "location": "blade-auth/src/main/java/org/springblade/auth/controller/SocialController.java:54",
+          "type": "HTTP请求参数",
+          "parameter": "source",
+          "code": "@RequestMapping(\"/oauth/render/{source}\")"
+        },
+        "flow": [
+          {
+            "step": 1,
+            "file": "SocialController.java",
+            "line": 56,
+            "description": "source参数传入SocialUtil.getAuthRequest()"
+          },
+          {
+            "step": 2,
+            "file": "SocialController.java",
+            "line": 57,
+            "description": "调用authRequest.authorize()获取authorizeUrl"
+          },
+          {
+            "step": 3,
+            "file": "SocialController.java",
+            "line": 58,
+            "description": "执行response.sendRedirect(authorizeUrl)",
+            "sink": "HTTP重定向"
+          }
+        ],
+        "sink": {
+          "location": "blade-auth/src/main/java/org/springblade/auth/controller/SocialController.java:58",
+          "type": "HTTP Redirect",
+          "function": "sendRedirect()"
+        },
+        "sanitization": "无",
+        "validation": "source参数通过SocialUtil.getAuthRequest()处理，需要确认是否有白名单验证",
+        "exploit": "GET /oauth/render/attacker_domain",
+        "impact": "钓鱼攻击，用户可能被重定向到恶意网站",
+        "recommendation": "实现OAuth提供者白名单验证"
+      },
+      {
+        "vulnerability_id": "SSRF_002",
+        "cwe": "CWE-918",
+        "severity": "CRITICAL",
+        "title": "SSRF通过数据源配置",
+        "source": {
+          "location": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/DatasourceController.java:80",
+          "type": "HTTP请求体",
+          "parameter": "datasource.url",
+          "code": "public R save(@Valid @RequestBody Datasource datasource)"
+        },
+        "flow": [
+          {
+            "step": 1,
+            "file": "DatasourceController.java",
+            "line": 80,
+            "description": "接收Datasource对象"
+          },
+          {
+            "step": 2,
+            "file": "DatasourceController.java",
+            "line": 101,
+            "description": "datasource.setUrl(datasource.getUrl().replace(\"&amp;\", \"&\"))"
+          },
+          {
+            "step": 3,
+            "file": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/CodeController.java",
+            "line": 136,
+            "description": "generator.setUrl(datasource.getUrl())"
+          },
+          {
+            "step": 4,
+            "description": "BladeCodeGenerator使用该URL连接数据库",
+            "sink": "数据库连接"
+          }
+        ],
+        "sink": {
+          "location": "BladeCodeGenerator",
+          "type": "Database Connection",
+          "function": "JDBC Connection"
+        },
+        "sanitization": "仅替换&amp;为&，无实际安全验证",
+        "validation": "无URL格式或白名单验证",
+        "exploit": "POST /datasource/save {\"url\": \"jdbc:mysql://attacker_internal_server/db\"}",
+        "impact": "攻击者可以探测内网数据库服务，可能泄露敏感数据",
+        "recommendation": "实现数据库URL白名单验证，禁用内网IP地址"
+      },
+      {
+        "vulnerability_id": "IDOR_001",
+        "cwe": "CWE-639",
+        "severity": "HIGH",
+        "title": "不安全的直接对象引用 - 用户详情",
+        "source": {
+          "location": "blade-service/blade-system/src/main/java/org/springblade/system/controller/UserController.java:87",
+          "type": "HTTP请求参数",
+          "parameter": "user对象",
+          "code": "public R<UserVO> detail(User user)"
+        },
+        "flow": [
+          {
+            "step": 1,
+            "file": "UserController.java",
+            "line": 87,
+            "description": "接收User对象作为参数"
+          },
+          {
+            "step": 2,
+            "file": "UserController.java",
+            "line": 88,
+            "description": "userService.getOne(Condition.getQueryWrapper(user))"
+          },
+          {
+            "step": 3,
+            "description": "返回用户详情，未验证请求者是否有权访问",
+            "sink": "数据返回"
+          }
+        ],
+        "sink": {
+          "location": "UserController.java:89",
+          "type": "Information Disclosure",
+          "function": "R.data()"
+        },
+        "sanitization": "无",
+        "validation": "虽然有@PreAuth(HAS_ROLE_ADMIN)，但管理员可以查看所有用户，缺少租户隔离验证",
+        "exploit": "管理员租户A可以查看租户B的用户信息",
+        "impact": "跨租户数据泄露",
+        "recommendation": "添加租户ID验证，确保只能访问同租户的数据"
+      },
+      {
+        "vulnerability_id": "IDOR_002",
+        "cwe": "CWE-639",
+        "severity": "CRITICAL",
+        "title": "权限提升 - 用户角色授予",
+        "source": {
+          "location": "blade-service/blade-system/src/main/java/org/springblade/system/controller/UserController.java:165",
+          "type": "HTTP请求参数",
+          "parameter": "userIds, roleIds",
+          "code": "public R grant(@RequestParam String userIds, @RequestParam String roleIds)"
+        },
+        "flow": [
+          {
+            "step": 1,
+            "file": "UserController.java",
+            "line": 165,
+            "description": "接收userIds和roleIds参数"
+          },
+          {
+            "step": 2,
+            "file": "blade-service/blade-system/src/main/java/org/springblade/system/service/impl/UserServiceImpl.java",
+            "line": 145,
+            "description": "user.setRoleId(roleIds)"
+          },
+          {
+            "step": 3,
+            "file": "UserServiceImpl.java",
+            "line": 145,
+            "description": "update(user, Wrappers.<User>update().lambda().in(User::getId, Func.toLongList(userIds)))",
+            "sink": "数据库更新"
+          }
+        ],
+        "sink": {
+          "location": "UserServiceImpl.java:145",
+          "type": "Privilege Escalation",
+          "function": "update()"
+        },
+        "sanitization": "无",
+        "validation": "虽然有@PreAuth(HAS_ROLE_ADMIN)，但管理员可能给自己或其他租户的用户提升权限",
+        "exploit": "租户A的管理员可能尝试给租户B的用户提升权限",
+        "impact": "跨租户权限提升",
+        "recommendation": "验证userIds中的用户属于当前租户"
+      },
+      {
+        "vulnerability_id": "PATH_TRAVERSAL_001",
+        "cwe": "CWE-22",
+        "severity": "HIGH",
+        "title": "路径遍历 - 代码生成",
+        "source": {
+          "location": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/CodeController.java:95",
+          "type": "HTTP请求体",
+          "parameter": "code对象",
+          "code": "public R submit(@Valid @RequestBody Code code)"
+        },
+        "flow": [
+          {
+            "step": 1,
+            "file": "CodeController.java",
+            "line": 95,
+            "description": "接收Code对象"
+          },
+          {
+            "step": 2,
+            "file": "CodeController.java",
+            "line": 143,
+            "description": "generator.setPackageDir(code.getApiPath())"
+          },
+          {
+            "step": 3,
+            "description": "BladeCodeGenerator使用该路径生成代码文件",
+            "sink": "文件系统写入"
+          }
+        ],
+        "sink": {
+          "location": "BladeCodeGenerator",
+          "type": "File Write",
+          "function": "文件生成"
+        },
+        "sanitization": "无",
+        "validation": "无路径验证或规范化",
+        "exploit": "POST /code/submit {\"apiPath\": \"../../../../etc/\"}",
+        "impact": "可能在服务器任意位置写入文件，导致代码注入",
+        "recommendation": "验证并规范化路径，限制在指定目录下"
+      },
+      {
+        "vulnerability_id": "BRUTE_FORCE_001",
+        "cwe": "CWE-307",
+        "severity": "MEDIUM",
+        "title": "暴力破解 - 登录端点",
+        "source": {
+          "location": "blade-auth/src/main/java/org/springblade/auth/controller/AuthController.java:55",
+          "type": "HTTP请求参数",
+          "parameter": "account, password",
+          "code": "public R<AuthInfo> token(...)"
+        },
+        "flow": [
+          {
+            "step": 1,
+            "file": "AuthController.java",
+            "line": 57,
+            "description": "接收账号密码参数"
+          },
+          {
+            "step": 2,
+            "file": "blade-auth/src/main/java/org/springblade/auth/granter/PasswordTokenGranter.java",
+            "line": 58,
+            "description": "TokenUtil.checkAccountAndIpLock()检查锁定状态"
+          },
+          {
+            "step": 3,
+            "file": "PasswordTokenGranter.java",
+            "line": 70,
+            "description": "userClient.userInfo(tenantId, account, DigestUtil.encrypt(decryptPassword))"
+          }
+        ],
+        "sink": {
+          "location": "PasswordTokenGranter.java:70",
+          "type": "Authentication",
+          "function": "用户认证"
+        },
+        "sanitization": "部分",
+        "validation": "实现了5次失败锁定机制，但只针对单个账号和IP",
+        "exploit": "攻击者可以从多个IP地址进行分布式暴力破解",
+        "impact": "可能暴力破解用户密码",
+        "recommendation": "添加验证码机制，实现全局速率限制"
+      },
+      {
+        "vulnerability_id": "INFO_DISC_001",
+        "cwe": "CWE-200",
+        "severity": "MEDIUM",
+        "title": "信息泄露 - 服务发现端点",
+        "source": {
+          "location": "blade-gateway/src/main/java/org/springblade/gateway/controller/DiscoveryClientController.java:46",
+          "type": "HTTP请求",
+          "code": "@GetMapping(\"/instances\")"
+        },
+        "flow": [
+          {
+            "step": 1,
+            "file": "DiscoveryClientController.java",
+            "line": 49,
+            "description": "discoveryClient.getServices()"
+          },
+          {
+            "step": 2,
+            "file": "DiscoveryClientController.java",
+            "line": 51,
+            "description": "discoveryClient.getInstances(s)"
+          },
+          {
+            "step": 3,
+            "file": "DiscoveryClientController.java",
+            "line": 54,
+            "description": "返回所有服务实例信息",
+            "sink": "信息返回"
+          }
+        ],
+        "sink": {
+          "location": "DiscoveryClientController.java:47",
+          "type": "Information Disclosure",
+          "function": "return instances"
+        },
+        "sanitization": "无",
+        "validation": "无身份验证或授权检查",
+        "exploit": "GET /discovery/instances",
+        "impact": "暴露内部微服务架构，包括主机名、端口等信息",
+        "recommendation": "添加认证或禁用此端点"
+      },
+      {
+        "vulnerability_id": "AUTHZ_001",
+        "cwe": "CWE-285",
+        "severity": "HIGH",
+        "title": "授权绕过 - 租户管理",
+        "source": {
+          "location": "blade-service/blade-system/src/main/java/org/springblade/system/controller/TenantController.java:114",
+          "type": "HTTP请求体",
+          "parameter": "tenant对象",
+          "code": "public R submit(@Valid @RequestBody Tenant tenant)"
+        },
+        "flow": [
+          {
+            "step": 1,
+            "file": "TenantController.java",
+            "line": 114,
+            "description": "接收Tenant对象"
+          },
+          {
+            "step": 2,
+            "file": "TenantController.java",
+            "line": 115,
+            "description": "tenantService.saveTenant(tenant)",
+            "sink": "数据持久化"
+          }
+        ],
+        "sink": {
+          "location": "TenantController.java:115",
+          "type": "Authorization Bypass",
+          "function": "saveTenant()"
+        },
+        "sanitization": "无",
+        "validation": "没有@PreAuth注解，任何人都可能创建/修改租户",
+        "exploit": "POST /tenant/submit 创建恶意租户",
+        "impact": "未授权访问，可能创建恶意租户窃取数据",
+        "recommendation": "添加@PreAuth(HAS_ROLE_ADMIN)保护"
+      }
+    ]
+  }
+}

@@ -1,0 +1,295 @@
+{
+  "scan_date": "2025-02-03",
+  "project_name": "SpringBlade",
+  "data_model_analysis": {
+    "core_entities": [
+      {
+        "name": "User",
+        "location": "blade-service/blade-system/src/main/java/org/springblade/system/user/entity/User.java",
+        "sensitive_fields": [
+          {
+            "field": "id",
+            "type": "Long",
+            "is_primary_key": true,
+            "access_pattern": "直接通过用户ID访问",
+            "vulnerability": "IDOR - 可能通过枚举ID访问其他用户数据"
+          },
+          {
+            "field": "account",
+            "type": "String",
+            "is_identifier": true,
+            "note": "用户登录账号"
+          },
+          {
+            "field": "password",
+            "type": "String",
+            "is_sensitive": true,
+            "storage": "哈希存储",
+            "note": "使用DigestUtil.encrypt()加密"
+          },
+          {
+            "field": "roleId",
+            "type": "String",
+            "is_sensitive": true,
+            "access_control": "需要@PreAuth(HAS_ROLE_ADMIN)权限修改",
+            "vulnerability": "权限提升 - 如果能修改其他用户的roleId"
+          },
+          {
+            "field": "deptId",
+            "type": "String",
+            "is_sensitive": true,
+            "note": "部门ID，影响数据权限"
+          },
+          {
+            "field": "tenantId",
+            "type": "String",
+            "is_sensitive": true,
+            "access_pattern": "多租户隔离关键字段",
+            "vulnerability": "租户隔离绕过 - tenantId由客户端传入"
+          }
+        ],
+        "ownership_validation": {
+          "status": "PARTIAL",
+          "details": "部分接口验证tenantId所有权，如UserController.list()，但其他接口如TenantController.detail()不验证"
+        }
+      },
+      {
+        "name": "Role",
+        "location": "blade-service/blade-system/src/main/java/org/springblade/system/entity/Role.java",
+        "sensitive_fields": [
+          {
+            "field": "id",
+            "type": "Long",
+            "is_primary_key": true
+          },
+          {
+            "field": "roleName",
+            "type": "String",
+            "is_sensitive": true
+          },
+          {
+            "field": "alias",
+            "type": "String",
+            "is_sensitive": true,
+            "note": "角色别名，用于权限检查"
+          },
+          {
+            "field": "tenantId",
+            "type": "String",
+            "is_sensitive": true
+          }
+        ],
+        "ownership_validation": {
+          "status": "PARTIAL",
+          "details": "RoleController.tree()验证tenantId，但RoleController.detail()不验证"
+        }
+      },
+      {
+        "name": "Tenant",
+        "location": "blade-service/blade-system/src/main/java/org/springblade/system/entity/Tenant.java",
+        "sensitive_fields": [
+          {
+            "field": "tenantId",
+            "type": "String",
+            "is_primary_key": true,
+            "note": "租户唯一标识"
+          },
+          {
+            "field": "domain",
+            "type": "String",
+            "is_sensitive": true,
+            "note": "租户域名，用于域名访问"
+          },
+          {
+            "field": "contactNumber",
+            "type": "String",
+            "is_sensitive": true,
+            "note": "联系电话"
+          }
+        ],
+        "ownership_validation": {
+          "status": "WEAK",
+          "details": "TenantController多个端点缺少@PreAuth保护，如detail()、submit()、remove()、info()"
+        }
+      },
+      {
+        "name": "Datasource",
+        "location": "blade-ops/blade-develop/src/main/java/org/springblade/develop/entity/Datasource.java",
+        "sensitive_fields": [
+          {
+            "field": "id",
+            "type": "Long",
+            "is_primary_key": true
+          },
+          {
+            "field": "url",
+            "type": "String",
+            "is_sensitive": true,
+            "note": "数据库连接URL",
+            "vulnerability": "SSRF - 用户可控的数据库连接地址"
+          },
+          {
+            "field": "username",
+            "type": "String",
+            "is_sensitive": true,
+            "note": "数据库用户名"
+          },
+          {
+            "field": "password",
+            "type": "String",
+            "is_sensitive": true,
+            "note": "数据库密码",
+            "vulnerability": "凭据泄露 - 明文存储在数据库中"
+          },
+          {
+            "field": "driverClass",
+            "type": "String",
+            "note": "数据库驱动类"
+          }
+        ],
+        "ownership_validation": {
+          "status": "NONE",
+          "details": "DatasourceController所有端点需要@PreAuth(HAS_ROLE_ADMIN)，但缺少租户级别的所有权验证"
+        }
+      },
+      {
+        "name": "Code",
+        "location": "blade-ops/blade-develop/src/main/java/org/springblade/develop/entity/Code.java",
+        "sensitive_fields": [
+          {
+            "field": "id",
+            "type": "Long",
+            "is_primary_key": true
+          },
+          {
+            "field": "apiPath",
+            "type": "String",
+            "is_sensitive": true,
+            "note": "API生成路径",
+            "vulnerability": "路径遍历 - 用于代码生成的路径"
+          },
+          {
+            "field": "webPath",
+            "type": "String",
+            "is_sensitive": true,
+            "note": "Web生成路径"
+          },
+          {
+            "field": "serviceName",
+            "type": "String",
+            "note": "服务名称"
+          }
+        ],
+        "ownership_validation": {
+          "status": "ADMIN_ONLY",
+          "details": "CodeController有@PreAuth(HAS_ROLE_ADMIN)保护，但genCode()直接使用用户输入的路径"
+        }
+      }
+    ],
+    "access_control_patterns": [
+      {
+        "pattern": "Tenant-based Isolation",
+        "implementation": "通过tenantId字段实现多租户数据隔离",
+        "validation_status": "INCONSISTENT",
+        "examples": [
+          {
+            "controller": "UserController",
+            "method": "list()",
+            "validation": "✓ 验证tenantId",
+            "code": "(!bladeUser.getTenantId().equals(BladeConstant.ADMIN_TENANT_ID)) ? queryWrapper.lambda().eq(User::getTenantId, bladeUser.getTenantId()) : queryWrapper"
+          },
+          {
+            "controller": "TenantController",
+            "method": "detail()",
+            "validation": "✗ 不验证tenantId",
+            "note": "可能访问其他租户的配置"
+          }
+        ]
+      },
+      {
+        "pattern": "Role-based Access Control",
+        "implementation": "通过@PreAuth注解实现基于角色的访问控制",
+        "validation_status": "PARTIAL",
+        "examples": [
+          {
+            "endpoint": "/user/remove",
+            "protection": "✓ @PreAuth(HAS_ROLE_ADMIN)"
+          },
+          {
+            "endpoint": "/tenant/submit",
+            "protection": "✗ 无@PreAuth注解"
+          },
+          {
+            "endpoint": "/user/update-info",
+            "protection": "✗ 无@PreAuth注解（但强制设置userId）"
+          }
+        ]
+      }
+    ],
+    "idor_vulnerabilities": [
+      {
+        "id": "IDOR_001",
+        "endpoint": "/user/detail",
+        "parameter": "User对象的id字段",
+        "vulnerability": "用户可以通过修改user对象的id访问其他用户信息",
+        "exploit": "GET /user/detail?id={target_user_id}",
+        "impact": "用户信息泄露",
+        "severity": "HIGH",
+        "mitigation": "验证请求用户是否为管理员或目标用户本人"
+      },
+      {
+        "id": "IDOR_002",
+        "endpoint": "/user/grant",
+        "parameter": "userIds, roleIds",
+        "vulnerability": "可能修改其他用户的角色",
+        "exploit": "POST /user/grant?userIds={target_user_id}&roleIds={admin_role_id}",
+        "impact": "权限提升",
+        "severity": "CRITICAL",
+        "mitigation": "确保只有管理员可以调用此接口"
+      },
+      {
+        "id": "IDOR_003",
+        "endpoint": "/datasource/detail",
+        "parameter": "Datasource对象的id字段",
+        "vulnerability": "可以访问其他数据源配置（包括数据库密码）",
+        "exploit": "GET /datasource/detail?id={target_datasource_id}",
+        "impact": "数据库凭据泄露",
+        "severity": "CRITICAL",
+        "mitigation": "验证数据源的租户所有权"
+      },
+      {
+        "id": "IDOR_004",
+        "endpoint": "/tenant/detail",
+        "parameter": "Tenant对象的tenantId字段",
+        "vulnerability": "可以查看其他租户的配置信息",
+        "exploit": "GET /tenant/detail?tenantId={target_tenant_id}",
+        "impact": "租户信息泄露",
+        "severity": "MEDIUM",
+        "mitigation": "添加租户隔离验证"
+      }
+    ],
+    "authorization_bypass": [
+      {
+        "id": "AUTHZ_001",
+        "endpoint": "/user/update-info",
+        "vulnerability": "虽然强制设置userId，但验证不够严格",
+        "details": "user.setId(SecureUtil.getUserId())，但没有验证用户是否有权修改该信息",
+        "severity": "MEDIUM"
+      },
+      {
+        "id": "AUTHZ_002",
+        "endpoint": "/tenant/submit, /tenant/remove",
+        "vulnerability": "租户管理接口缺少权限保护",
+        "details": "TenantController的submit和remove方法没有@PreAuth注解",
+        "severity": "HIGH"
+      },
+      {
+        "id": "AUTHZ_003",
+        "endpoint": "/menu/routes, /menu/buttons",
+        "vulnerability": "菜单和按钮权限端点无身份验证",
+        "details": "虽然需要BladeUser参数，但没有强制认证检查",
+        "severity": "MEDIUM"
+      }
+    ]
+  }
+}

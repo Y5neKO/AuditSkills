@@ -1,0 +1,173 @@
+{
+  "scan_date": "2025-02-03",
+  "project_name": "SpringBlade",
+  "access_control_analysis": {
+    "summary": {
+      "total_issues": 7,
+      "critical": 2,
+      "high": 3,
+      "medium": 2
+    },
+    "authorization_issues": [
+      {
+        "id": "AUTHZ_001",
+        "title": "垂直越权 - 租户管理",
+        "severity": "CRITICAL",
+        "description": "租户管理接口缺少权限保护",
+        "affected_endpoints": [
+          "/tenant/detail",
+          "/tenant/submit",
+          "/tenant/remove",
+          "/tenant/page"
+        ],
+        "issue": "TenantController中的这些方法没有@PreAuth注解，任何认证用户都可以调用",
+        "exploit": "普通用户可以创建/修改/删除租户",
+        "impact": "完全控制多租户系统",
+        "remediation": "添加@PreAuth(HAS_ROLE_ADMIN)注解"
+      },
+      {
+        "id": "AUTHZ_002",
+        "title": "水平越权 - 跨租户访问",
+        "severity": "CRITICAL",
+        "description": "多个接口未验证租户所有权",
+        "affected_endpoints": [
+          "/user/detail",
+          "/role/detail",
+          "/datasource/detail",
+          "/tenant/detail"
+        ],
+        "issue": "虽然有@PreAuth(HAS_ROLE_ADMIN)保护，但管理员可以访问其他租户的数据",
+        "exploit": "租户A的管理员可以查看/修改租户B的用户/角色/数据源",
+        "impact": "多租户隔离失效",
+        "remediation": "实现租户级别的所有权验证"
+      },
+      {
+        "id": "AUTHZ_003",
+        "title": "垂直越权 - 权限授予",
+        "severity": "HIGH",
+        "description": "用户权限授予接口存在权限提升风险",
+        "affected_endpoints": [
+          "/user/grant"
+        ],
+        "issue": "管理员可以给任何人分配任何角色，包括其他租户的用户",
+        "exploit": "租户A的管理员给租户B的用户分配管理员角色",
+        "impact": "跨租户权限提升",
+        "remediation": "验证userIds中的用户属于当前租户"
+      },
+      {
+        "id": "AUTHZ_004",
+        "title": "未授权访问 - 公开端点",
+        "severity": "MEDIUM",
+        "description": "某些敏感端点不需要身份验证",
+        "affected_endpoints": [
+          "/user/info",
+          "/user/update-password",
+          "/user/update-info",
+          "/user/register-guest",
+          "/tenant/info",
+          "/menu/routes",
+          "/menu/buttons"
+        ],
+        "issue": "这些端点没有@PreAuth注解，依赖BladeUser参数注入，但可能被绕过",
+        "exploit": "未认证用户可能访问这些端点",
+        "impact": "信息泄露或未授权操作",
+        "remediation": "添加@PreAuth注解或实现全局认证过滤器"
+      },
+      {
+        "id": "AUTHZ_005",
+        "title": "权限验证不一致",
+        "severity": "MEDIUM",
+        "description": "同类接口的权限保护不一致",
+        "examples": [
+          {
+            "endpoint": "/user/detail",
+            "protection": "@PreAuth(HAS_ROLE_ADMIN)"
+          },
+          {
+            "endpoint": "/user/info",
+            "protection": "无@PreAuth注解"
+          }
+        ],
+        "issue": "detail()需要管理员权限，但info()不需要，两者功能相似",
+        "impact": "权限控制混乱",
+        "remediation": "统一权限控制策略"
+      }
+    ],
+    "authentication_issues": [
+      {
+        "id": "AUTHN_001",
+        "title": "JWT Token管理不当",
+        "severity": "MEDIUM",
+        "description": "JWT token缺少撤销机制",
+        "issue": "一旦token签发，在过期前无法撤销",
+        "impact": "用户登出后token仍然有效，被盗用无法及时失效",
+        "remediation": "实现token黑名单机制"
+      },
+      {
+        "id": "AUTHN_002",
+        "title": "OAuth State参数验证不足",
+        "severity": "MEDIUM",
+        "description": "OAuth登录的state参数验证不明确",
+        "issue": "SocialController使用AuthStateUtils.createState()生成state，但回调时未验证",
+        "impact": "可能遭受CSRF攻击",
+        "remediation": "实现state参数的生成和验证"
+      }
+    ],
+    "session_management": [
+      {
+        "component": "登录失败锁定",
+        "implementation": "Redis存储失败次数",
+        "configuration": {
+          "max_attempts": 5,
+          "lock_duration": "30分钟"
+        },
+        "issues": [
+          "只针对单个账号和IP，可以绕过",
+          "缺少验证码机制",
+          "锁定时间固定，未递增"
+        ]
+      },
+      {
+        "component": "JWT Token",
+        "implementation": "SecureUtil.createJWT()",
+        "issues": [
+          "token过期时间不明确",
+          "refresh token机制不完善",
+          "缺少token刷新限制"
+        ]
+      }
+    ],
+    "privilege_escalation_paths": [
+      {
+        "path": "普通用户 -> 管理员",
+        "steps": [
+          "1. 注册为普通用户",
+          "2. 访问/user/grant接口(IDOR)",
+          "3. 修改自己的roleId为管理员角色",
+          "4. 获得管理员权限"
+        ],
+        "feasibility": "HIGH",
+        "required_vulnerabilities": ["IDOR", "缺少租户验证"]
+      },
+      {
+        "path": "租户A管理员 -> 租户B管理员",
+        "steps": [
+          "1. 作为租户A管理员登录",
+          "2. 修改Tenant-Id头部为租户B",
+          "3. 访问租户B的管理接口"
+        ],
+        "feasibility": "MEDIUM",
+        "required_vulnerabilities": ["租户ID头部未验证"]
+      }
+    ],
+    "recommendations": [
+      "实现全局的认证拦截器",
+      "统一@PreAuth注解的使用",
+      "实现租户级别的所有权验证",
+      "添加token撤销机制",
+      "实现完善的审计日志",
+      "添加敏感操作二次确认",
+      "实现实时权限验证"
+    ]
+  }
+}

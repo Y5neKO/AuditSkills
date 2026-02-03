@@ -36,7 +36,7 @@ allowed-tools: Read, Grep, Glob, Write, Bash, Task
 
 2. **报告进度**
    ```
-   [1/6] 正在执行资产发现...
+   [1/7] 正在执行资产发现...
    ```
 
 ---
@@ -76,7 +76,22 @@ Task(subagent_type="data-model-analyzer",
 **等待所有子代理完成**，然后：
 - 读取 `.workspace/code-audit/phase1_discovery/` 中的产物文件
 - 合并结果到内存中供后续阶段使用
-- 报告进度：`[2/6] 资产发现完成 - 发现 XX 个入口，XX 个Sink点`
+- 报告进度：`[2/7] 资产发现完成 - 发现 XX 个入口，XX 个Sink点`
+
+---
+
+### 阶段 1.5: 入口功能分析
+
+```javascript
+Task(subagent_type="entry-function-analyzer",
+     prompt="深度分析每个HTTP入口的业务逻辑、参数处理和返回值。
+              输入: phase1_discovery/web_entries.json
+              输出目录: .workspace/code-audit/phase1_5_entry_analysis/
+              输出文件: entry_functions.json
+              完成后返回: ✅ 分析 XX 个入口函数")
+```
+
+- 报告进度：`[3/7] 入口功能分析完成`
 
 ---
 
@@ -117,7 +132,7 @@ Task(subagent_type="poc-generator",
               完成后返回: ✅ 生成 XX 个PoC脚本")
 ```
 
-- 报告进度：`[3/6] 技术漏洞审计完成 - 确认 XX 个漏洞`
+- 报告进度：`[4/7] 技术漏洞审计完成 - 确认 XX 个漏洞`
 
 ---
 
@@ -133,7 +148,7 @@ Task(subagent_type="forward-flow-tracer",
 ```
 
 - 对比正向和反向结果
-- 报告进度：`[3/6] 正向追踪和交叉验证完成`
+- 报告进度：`[5/7] 正向追踪和交叉验证完成`
 
 ---
 
@@ -157,7 +172,7 @@ Task(subagent_type="business-logic-auditor",
               完成后返回: ✅ 发现 XX 个业务逻辑漏洞")
 ```
 
-- 报告进度：`[4/6] 业务逻辑审计完成`
+- 报告进度：`[6/7] 业务逻辑审计完成`
 
 ---
 
@@ -172,7 +187,7 @@ Task(subagent_type="attack-chain-orchestrator",
               完成后返回: ✅ 构建 XX 条攻击链")
 ```
 
-- 报告进度：`[5/6] 攻击链分析完成`
+- 报告进度：`[7/7] 攻击链分析完成`
 
 ---
 
@@ -187,7 +202,7 @@ Task(subagent_type="report-generator",
               完成后返回: ✅ 报告已生成")
 ```
 
-- 报告进度：`[6/6] 审计完成！`
+- 报告进度：`审计完成！`
 
 ---
 

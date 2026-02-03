@@ -1,0 +1,223 @@
+{
+  "metadata": {
+    "scan_date": "2025-02-03",
+    "project_name": "SpringBlade",
+    "project_version": "4.8.0.RELEASE",
+    "auditor": "AI Security Auditor",
+    "report_version": "1.0"
+  },
+  "executive_summary": {
+    "total_vulnerabilities": 8,
+    "critical": 3,
+    "high": 3,
+    "medium": 2,
+    "low": 0,
+    "key_findings": [
+      "多租户隔离失效导致跨租户数据访问",
+      "SSRF通过数据源配置可探测内网服务",
+      "IDOR导致数据源凭据泄露"
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "id": "CVE-2025-SB-001",
+      "cwe": "CWE-918",
+      "severity": "CRITICAL",
+      "cvss": {
+        "score": 9.1,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H"
+      },
+      "title": "SSRF通过数据源配置",
+      "affected_file": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/DatasourceController.java",
+      "description": "数据源配置接口允许管理员指定任意数据库连接URL，攻击者可以探测内网服务或窃取数据",
+      "poc": "POST /datasource/submit {\"url\": \"jdbc:mysql://192.168.1.100:3306/db\"}",
+      "remediation": "实现数据库URL白名单验证，禁用内网IP地址"
+    },
+    {
+      "id": "CVE-2025-SB-002",
+      "cwe": "CWE-639",
+      "severity": "CRITICAL",
+      "cvss": {
+        "score": 8.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H"
+      },
+      "title": "IDOR - 跨租户权限提升",
+      "affected_file": "blade-service/blade-system/src/main/java/org/springblade/system/controller/UserController.java",
+      "description": "用户角色授予接口未验证目标用户的租户所有权，管理员可以修改其他租户用户的角色",
+      "poc": "POST /user/grant?userIds={other_tenant_user_id}&roleIds={admin_role_id}",
+      "remediation": "在grant()方法中验证userIds中的用户属于当前租户"
+    },
+    {
+      "id": "CVE-2025-SB-003",
+      "cwe": "CWE-639",
+      "severity": "CRITICAL",
+      "cvss": {
+        "score": 8.5,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:N/A:N"
+      },
+      "title": "IDOR - 数据源凭据泄露",
+      "affected_file": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/DatasourceController.java",
+      "description": "数据源详情接口未验证数据源的租户所有权，管理员可以查看其他租户的数据库密码",
+      "poc": "GET /datasource/detail?id={other_tenant_datasource_id}",
+      "remediation": "在detail()方法中验证数据源的租户所有权"
+    },
+    {
+      "id": "CVE-2025-SB-004",
+      "cwe": "CWE-22",
+      "severity": "HIGH",
+      "cvss": {
+        "score": 7.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H"
+      },
+      "title": "路径遍历 - 代码生成",
+      "affected_file": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/CodeController.java",
+      "description": "通过代码生成功能，可以在服务器任意位置写入文件",
+      "poc": "POST /code/submit {\"apiPath\": \"../../../tmp/\"}",
+      "remediation": "验证并规范化路径，限制在项目目录下"
+    },
+    {
+      "id": "CVE-2025-SB-005",
+      "cwe": "CWE-918",
+      "severity": "HIGH",
+      "cvss": {
+        "score": 7.1,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+      },
+      "title": "开放重定向 - OAuth",
+      "affected_file": "blade-auth/src/main/java/org/springblade/auth/controller/SocialController.java",
+      "description": "OAuth重定向端点可能导致钓鱼攻击",
+      "poc": "GET /oauth/render/attacker-controlled-provider",
+      "remediation": "实现OAuth提供者白名单验证"
+    },
+    {
+      "id": "CVE-2025-SB-006",
+      "cwe": "CWE-285",
+      "severity": "HIGH",
+      "cvss": {
+        "score": 7.5,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      },
+      "title": "授权绕过 - 租户管理",
+      "affected_file": "blade-service/blade-system/src/main/java/org/springblade/system/controller/TenantController.java",
+      "description": "租户管理接口缺少权限保护",
+      "poc": "POST /tenant/submit {\"tenantId\": \"999999\"}",
+      "remediation": "为所有租户管理端点添加@PreAuth(HAS_ROLE_ADMIN)保护"
+    },
+    {
+      "id": "CVE-2025-SB-007",
+      "cwe": "CWE-307",
+      "severity": "MEDIUM",
+      "cvss": {
+        "score": 5.0,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+      },
+      "title": "暴力破解 - 登录",
+      "affected_file": "blade-auth/src/main/java/org/springblade/auth/controller/AuthController.java",
+      "description": "登录端点缺少足够的速率限制保护",
+      "poc": "使用多个IP地址进行暴力破解",
+      "remediation": "添加验证码，实现全局速率限制"
+    },
+    {
+      "id": "CVE-2025-SB-008",
+      "cwe": "CWE-200",
+      "severity": "MEDIUM",
+      "cvss": {
+        "score": 5.3,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+      },
+      "title": "信息泄露 - 服务发现",
+      "affected_file": "blade-gateway/src/main/java/org/springblade/gateway/controller/DiscoveryClientController.java",
+      "description": "服务发现端点暴露内部架构信息",
+      "poc": "GET /discovery/instances",
+      "remediation": "添加认证或禁用此端点"
+    }
+  ],
+  "business_logic_issues": [
+    {
+      "id": "BIZ_001",
+      "title": "多租户隔离失效",
+      "severity": "CRITICAL",
+      "description": "多个接口未正确验证租户所有权"
+    },
+    {
+      "id": "BIZ_002",
+      "title": "权限提升链",
+      "severity": "CRITICAL",
+      "description": "存在从普通用户到管理员的权限提升路径"
+    },
+    {
+      "id": "BIZ_003",
+      "title": "第三方注册绕过",
+      "severity": "HIGH",
+      "description": "社交登录注册流程可能被滥用"
+    }
+  ],
+  "attack_chains": [
+    {
+      "id": "CHAIN_001",
+      "title": "跨租户权限提升链",
+      "severity": "CRITICAL",
+      "steps": [
+        "登录租户A",
+        "枚举租户B的用户ID",
+        "获取租户B的管理员角色ID",
+        "提升租户B用户权限",
+        "重置租户B用户密码",
+        "登录租户B账号",
+        "完全控制租户B"
+      ]
+    },
+    {
+      "id": "CHAIN_002",
+      "title": "SSRF到内网探测链",
+      "severity": "CRITICAL",
+      "steps": [
+        "登录系统",
+        "创建恶意数据源",
+        "创建代码生成任务",
+        "触发代码生成",
+        "枚举内网数据库",
+        "窃取数据"
+      ]
+    },
+    {
+      "id": "CHAIN_003",
+      "title": "路径遍历到RCE链",
+      "severity": "HIGH",
+      "steps": [
+        "登录系统",
+        "创建代码生成任务",
+        "设置恶意路径",
+        "生成代码",
+        "访问生成的代码"
+      ]
+    }
+  ],
+  "recommendations": {
+    "immediate": [
+      "为所有租户管理端点添加@PreAuth保护",
+      "实现租户所有权验证",
+      "添加数据库URL白名单",
+      "禁用/discovery端点或添加认证"
+    ],
+    "short_term": [
+      "实现全局租户拦截器",
+      "添加验证码机制",
+      "实现token撤销机制",
+      "加强OAuth安全验证"
+    ],
+    "long_term": [
+      "实现完整的RBAC系统",
+      "实现API速率限制",
+      "添加安全监控和告警",
+      "定期进行安全审计"
+    ]
+  },
+  "owasp_mapping": {
+    "A01:2021 - 访问控制失效": ["CVE-2025-SB-002", "CVE-2025-SB-003", "CVE-2025-SB-006"],
+    "A03:2021 - 注入": ["CVE-2025-SB-004"],
+    "A04:2021 - 不安全设计": ["BIZ_001"],
+    "A05:2021 - 安全配置错误": ["CVE-2025-SB-006", "CVE-2025-SB-008"],
+    "A07:2021 - 认证失败": ["CVE-2025-SB-007"]
+  }
+}

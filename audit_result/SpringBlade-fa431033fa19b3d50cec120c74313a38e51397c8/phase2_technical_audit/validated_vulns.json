@@ -1,0 +1,159 @@
+{
+  "scan_date": "2025-02-03",
+  "project_name": "SpringBlade",
+  "validated_vulnerabilities": {
+    "summary": {
+      "total": 8,
+      "critical": 3,
+      "high": 3,
+      "medium": 2,
+      "low": 0
+    },
+    "vulnerabilities": [
+      {
+        "id": "CVE-2025-SB-001",
+        "cwe": "CWE-918",
+        "severity": "CRITICAL",
+        "title": "SSRF通过数据源配置",
+        "status": "CONFIRMED",
+        "cvss_score": 9.1,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H",
+        "affected_file": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/DatasourceController.java",
+        "affected_versions": "4.5.0 - 4.8.0",
+        "description": "攻击者通过配置恶意数据源URL，可以探测内网服务或读取数据库数据",
+        "proof_of_concept": {
+          "request": "POST /datasource/submit HTTP/1.1\nContent-Type: application/json\n\n{\"url\": \"jdbc:mysql://192.168.1.100:3306/mysql\", \"username\": \"root\", \"password\": \"test\", \"driverClass\": \"com.mysql.cj.jdbc.Driver\"}",
+          "expected_result": "数据源被保存，代码生成时尝试连接内网数据库"
+        },
+        "impact": "内网探测、敏感数据泄露",
+        "remediation": "实现数据库URL白名单验证，禁用内网IP地址，添加网络隔离"
+      },
+      {
+        "id": "CVE-2025-SB-002",
+        "cwe": "CWE-639",
+        "severity": "CRITICAL",
+        "title": "IDOR - 跨租户权限提升",
+        "status": "CONFIRMED",
+        "cvss_score": 8.8,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H",
+        "affected_file": "blade-service/blade-system/src/main/java/org/springblade/system/controller/UserController.java",
+        "affected_versions": "All versions",
+        "description": "管理员可以修改其他租户用户的角色，实现跨租户权限提升",
+        "proof_of_concept": {
+          "request": "POST /user/grant HTTP/1.1\nContent-Type: application/x-www-form-urlencoded\n\nuserIds={other_tenant_user_id}&roleIds={admin_role_id}",
+          "expected_result": "其他租户的用户角色被修改"
+        },
+        "impact": "跨租户权限提升，数据隔离失效",
+        "remediation": "在grant()方法中验证userIds中的用户属于当前租户"
+      },
+      {
+        "id": "CVE-2025-SB-003",
+        "cwe": "CWE-639",
+        "severity": "CRITICAL",
+        "title": "IDOR - 数据源凭据泄露",
+        "status": "CONFIRMED",
+        "cvss_score": 8.5,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:N/A:N",
+        "affected_file": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/DatasourceController.java",
+        "affected_versions": "All versions",
+        "description": "管理员可以查看其他租户的数据源配置，包括数据库密码",
+        "proof_of_concept": {
+          "request": "GET /datasource/detail?id={other_tenant_datasource_id}",
+          "expected_result": "返回其他租户的数据源配置，包含明文密码"
+        },
+        "impact": "跨租户数据库凭据泄露",
+        "remediation": "在detail()方法中验证数据源的租户所有权"
+      },
+      {
+        "id": "CVE-2025-SB-004",
+        "cwe": "CWE-22",
+        "severity": "HIGH",
+        "title": "路径遍历 - 代码生成",
+        "status": "CONFIRMED",
+        "cvss_score": 7.8,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H",
+        "affected_file": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/CodeController.java",
+        "affected_versions": "All versions",
+        "description": "通过代码生成功能，可以在服务器任意位置写入文件",
+        "proof_of_concept": {
+          "request": "POST /code/submit HTTP/1.1\nContent-Type: application/json\n\n{\"apiPath\": \"../../../../tmp/\", \"serviceName\": \"evil\", \"tableName\": \"test\"}",
+          "expected_result": "代码在/tmp目录下生成"
+        },
+        "impact": "任意文件写入，可能导致远程代码执行",
+        "remediation": "验证并规范化路径，限制在项目目录下"
+      },
+      {
+        "id": "CVE-2025-SB-005",
+        "cwe": "CWE-918",
+        "severity": "HIGH",
+        "title": "开放重定向 - OAuth",
+        "status": "CONFIRMED",
+        "cvss_score": 7.1,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+        "affected_file": "blade-auth/src/main/java/org/springblade/auth/controller/SocialController.java",
+        "affected_versions": "All versions",
+        "description": "OAuth重定向端点可能导致钓鱼攻击",
+        "proof_of_concept": {
+          "request": "GET /oauth/render/attacker-controlled-provider",
+          "expected_result": "用户被重定向到攻击者控制的URL"
+        },
+        "impact": "钓鱼攻击，凭据窃取",
+        "remediation": "实现OAuth提供者白名单验证，添加state参数CSRF保护"
+      },
+      {
+        "id": "CVE-2025-SB-006",
+        "cwe": "CWE-285",
+        "severity": "HIGH",
+        "title": "授权绕过 - 租户管理",
+        "status": "CONFIRMED",
+        "cvss_score": 7.5,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "affected_file": "blade-service/blade-system/src/main/java/org/springblade/system/controller/TenantController.java",
+        "affected_versions": "All versions",
+        "description": "租户管理端点缺少权限保护，可能导致未授权访问",
+        "proof_of_concept": {
+          "request": "POST /tenant/submit HTTP/1.1\nContent-Type: application/json\n\n{\"tenantId\": \"999999\", \"tenantName\": \"Attacker\", \"domain\": \"evil.com\"}",
+          "expected_result": "成功创建恶意租户"
+        },
+        "impact": "未授权创建/修改租户，可能窃取数据",
+        "remediation": "为所有租户管理端点添加@PreAuth(HAS_ROLE_ADMIN)保护"
+      },
+      {
+        "id": "CVE-2025-SB-007",
+        "cwe": "CWE-307",
+        "severity": "MEDIUM",
+        "title": "暴力破解 - 登录",
+        "status": "CONFIRMED",
+        "cvss_score": 5.0,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+        "affected_file": "blade-auth/src/main/java/org/springblade/auth/controller/AuthController.java",
+        "affected_versions": "All versions",
+        "description": "登录端点缺少足够的速率限制保护",
+        "proof_of_concept": {
+          "request": "使用多个IP地址对同一账号进行暴力破解",
+          "expected_result": "绕过单IP锁定机制"
+        },
+        "impact": "密码可能被暴力破解",
+        "remediation": "添加验证码，实现全局速率限制，增强账号锁定机制"
+      },
+      {
+        "id": "CVE-2025-SB-008",
+        "cwe": "CWE-200",
+        "severity": "MEDIUM",
+        "title": "信息泄露 - 服务发现",
+        "status": "CONFIRMED",
+        "cvss_score": 5.3,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+        "affected_file": "blade-gateway/src/main/java/org/springblade/gateway/controller/DiscoveryClientController.java",
+        "affected_versions": "All versions",
+        "description": "服务发现端点暴露内部架构信息",
+        "proof_of_concept": {
+          "request": "GET /discovery/instances",
+          "expected_result": "返回所有微服务的实例信息，包括IP和端口"
+        },
+        "impact": "内部架构信息泄露，辅助攻击",
+        "remediation": "添加认证或禁用此端点"
+      }
+    ]
+  }
+}

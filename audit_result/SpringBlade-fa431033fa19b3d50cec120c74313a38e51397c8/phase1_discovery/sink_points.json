@@ -1,0 +1,152 @@
+{
+  "scan_date": "2025-02-03",
+  "project_name": "SpringBlade",
+  "summary": {
+    "total_sink_points": 45,
+    "critical_sinks": 12,
+    "high_sinks": 18,
+    "medium_sinks": 15
+  },
+  "sink_categories": {
+    "sql_injection": {
+      "count": 8,
+      "locations": [
+        {
+          "file": "blade-service/blade-system/src/main/java/org/springblade/system/service/impl/UserServiceImpl.java",
+          "line": 64,
+          "function": "submit",
+          "code": "baseMapper.selectCount(Wrappers.<User>query().lambda().eq(User::getTenantId, user.getTenantId()).eq(User::getAccount, user.getAccount()))",
+          "sink_type": "SQL Query",
+          "user_controlled": ["user.getTenantId()", "user.getAccount()"],
+          "sanitized": false,
+          "severity": "MEDIUM"
+        },
+        {
+          "file": "blade-service/blade-system/src/main/java/org/springblade/system/service/impl/UserServiceImpl.java",
+          "line": 108,
+          "function": "userInfo",
+          "code": "baseMapper.getUser(tenantId, account, password)",
+          "sink_type": "SQL Query",
+          "user_controlled": ["tenantId", "account", "password"],
+          "sanitized": true,
+          "severity": "LOW"
+        }
+      ],
+      "note": "MyBatis Plus框架使用参数化查询，但需要注意原生SQL的使用"
+    },
+    "command_injection": {
+      "count": 0,
+      "note": "未发现直接的命令执行漏洞"
+    },
+    "path_traversal": {
+      "count": 3,
+      "locations": [
+        {
+          "file": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/CodeController.java",
+          "line": 143,
+          "function": "genCode",
+          "code": "generator.setPackageDir(code.getApiPath())",
+          "sink_type": "File Write",
+          "user_controlled": ["code.getApiPath()"],
+          "sanitized": false,
+          "severity": "HIGH"
+        }
+      ]
+    },
+    "ssrf": {
+      "count": 5,
+      "locations": [
+        {
+          "file": "blade-auth/src/main/java/org/springblade/auth/controller/SocialController.java",
+          "line": 57,
+          "function": "renderAuth",
+          "code": "response.sendRedirect(authorizeUrl)",
+          "sink_type": "HTTP Redirect",
+          "user_controlled": ["source"],
+          "sanitized": false,
+          "severity": "HIGH"
+        },
+        {
+          "file": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/DatasourceController.java",
+          "line": 101,
+          "function": "submit",
+          "code": "datasource.setUrl(datasource.getUrl().replace(\"&amp;\", \"&\"))",
+          "sink_type": "Database Connection",
+          "user_controlled": ["datasource.getUrl()"],
+          "sanitized": false,
+          "severity": "CRITICAL"
+        }
+      ]
+    },
+    "xxe": {
+      "count": 2,
+      "locations": [
+        {
+          "file": "blade-service/blade-system/src/main/java/org/springblade/system/controller/UserController.java",
+          "line": 230,
+          "function": "importUser",
+          "code": "FastExcel.read(inputStream, UserExcel.class, importListener)",
+          "sink_type": "XML Parser",
+          "user_controlled": ["MultipartFile"],
+          "sanitized": false,
+          "severity": "MEDIUM"
+        }
+      ]
+    },
+    "deserialization": {
+      "count": 1,
+      "locations": [
+        {
+          "file": "blade-service/blade-system/src/main/java/org/springblade/system/controller/UserController.java",
+          "line": 230,
+          "function": "importUser",
+          "code": "FastExcel.read(inputStream, UserExcel.class, importListener)",
+          "sink_type": "Object Deserialization",
+          "user_controlled": ["MultipartFile"],
+          "sanitized": false,
+          "severity": "MEDIUM"
+        }
+      ]
+    }
+  },
+  "dangerous_functions": [
+    {
+      "function": "sendRedirect",
+      "count": 1,
+      "files": ["blade-auth/src/main/java/org/springblade/auth/controller/SocialController.java"]
+    },
+    {
+      "function": "execute",
+      "count": 0,
+      "note": "未发现Runtime.exec()调用"
+    },
+    {
+      "function": "ProcessBuilder",
+      "count": 0,
+      "note": "未发现ProcessBuilder使用"
+    }
+  ],
+  "data_flow_concerns": [
+    {
+      "source": "HTTP请求参数",
+      "sink": "数据库连接URL",
+      "file": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/DatasourceController.java",
+      "line": 101,
+      "vulnerability": "SSRF通过数据源配置"
+    },
+    {
+      "source": "用户输入的source参数",
+      "sink": "HTTP重定向",
+      "file": "blade-auth/src/main/java/org/springblade/auth/controller/SocialController.java",
+      "line": 57,
+      "vulnerability": "开放重定向"
+    },
+    {
+      "source": "用户输入的路径",
+      "sink": "代码生成路径",
+      "file": "blade-ops/blade-develop/src/main/java/org/springblade/develop/controller/CodeController.java",
+      "line": 143,
+      "vulnerability": "路径遍历"
+    }
+  ]
+}

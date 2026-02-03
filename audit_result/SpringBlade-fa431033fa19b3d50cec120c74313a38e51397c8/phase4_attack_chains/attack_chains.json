@@ -1,0 +1,293 @@
+{
+  "scan_date": "2025-02-03",
+  "project_name": "SpringBlade",
+  "attack_chain_analysis": {
+    "summary": {
+      "total_chains": 4,
+      "critical_chains": 2,
+      "high_chains": 1,
+      "medium_chains": 1
+    },
+    "attack_chains": [
+      {
+        "id": "CHAIN_001",
+        "title": "跨租户权限提升链",
+        "severity": "CRITICAL",
+        "attacker_profile": "租户A的管理员",
+        "goal": "完全控制租户B的数据和用户",
+        "steps": [
+          {
+            "step": 1,
+            "action": "登录租户A",
+            "endpoint": "POST /token",
+            "description": "使用租户A的管理员账号登录，获取JWT token",
+            "vulnerabilities_used": []
+          },
+          {
+            "step": 2,
+            "action": "枚举租户B的用户ID",
+            "endpoint": "GET /user/list",
+            "description": "通过分页接口枚举租户B的用户ID",
+            "vulnerabilities_used": ["INFO_DISC_001"],
+            "technique": "修改Tenant-Id头部为租户B"
+          },
+          {
+            "step": 3,
+            "action": "获取租户B的管理员角色ID",
+            "endpoint": "GET /role/list",
+            "description": "查询租户B的角色列表，找到管理员角色",
+            "vulnerabilities_used": ["AUTHZ_002"],
+            "technique": "修改Tenant-Id头部"
+          },
+          {
+            "step": 4,
+            "action": "提升租户B用户的权限",
+            "endpoint": "POST /user/grant",
+            "description": "给租户B的某个用户分配管理员角色",
+            "vulnerabilities_used": ["IDOR_002", "AUTHZ_002"],
+            "payload": "userIds={tenantB_user_id}&roleIds={tenantB_admin_role_id}"
+          },
+          {
+            "step": 5,
+            "action": "重置租户B用户密码",
+            "endpoint": "POST /user/reset-password",
+            "description": "重置该用户密码为默认值",
+            "vulnerabilities_used": ["AUTHZ_002"],
+            "payload": "userIds={tenantB_user_id}"
+          },
+          {
+            "step": 6,
+            "action": "登录租户B账号",
+            "endpoint": "POST /token",
+            "description": "使用默认密码登录租户B的账号",
+            "vulnerabilities_used": []
+          },
+          {
+            "step": 7,
+            "action": "完全控制租户B",
+            "description": "现在拥有租户B的管理员权限",
+            "impact": "数据窃取、用户篡改、系统破坏"
+          }
+        ],
+        "impact": "完全控制目标租户，违反多租户隔离",
+        "defenses": [
+          "实现租户ID头部验证",
+          "在grant()中验证用户租户",
+          "添加跨租户操作审计"
+        ]
+      },
+      {
+        "id": "CHAIN_002",
+        "title": "SSRF到内网探测链",
+        "severity": "CRITICAL",
+        "attacker_profile": "有代码生成权限的管理员",
+        "goal": "探测内网服务，窃取数据库数据",
+        "steps": [
+          {
+            "step": 1,
+            "action": "登录系统",
+            "endpoint": "POST /token",
+            "description": "使用管理员账号登录",
+            "vulnerabilities_used": []
+          },
+          {
+            "step": 2,
+            "action": "创建恶意数据源",
+            "endpoint": "POST /datasource/submit",
+            "description": "创建指向内网数据库的数据源",
+            "vulnerabilities_used": ["SSRF_002"],
+            "payload": "{\"url\": \"jdbc:mysql://192.168.1.100:3306/sensitive_db\", \"username\": \"root\", \"password\": \"\"}"
+          },
+          {
+            "step": 3,
+            "action": "创建代码生成任务",
+            "endpoint": "POST /code/submit",
+            "description": "配置代码生成使用恶意数据源",
+            "vulnerabilities_used": []
+          },
+          {
+            "step": 4,
+            "action": "触发代码生成",
+            "endpoint": "POST /code/gen-code",
+            "description": "系统连接恶意数据源，读取表结构",
+            "vulnerabilities_used": ["SSRF_002"]
+          },
+          {
+            "step": 5,
+            "action": "枚举内网数据库",
+            "description": "通过修改数据源URL枚举内网服务",
+            "vulnerabilities_used": ["SSRF_002"],
+            "targets": [
+              "192.168.1.1:3306",
+              "192.168.1.2:3306",
+              "172.16.0.1:3306"
+            ]
+          },
+          {
+            "step": 6,
+            "action": "窃取数据",
+            "description": "生成代码时会读取表结构和数据",
+            "vulnerabilities_used": ["INFO_DISC"],
+            "impact": "内网数据库信息泄露"
+          }
+        ],
+        "impact": "内网服务探测，敏感数据泄露",
+        "defenses": [
+          "实现数据库URL白名单",
+          "禁用内网IP地址",
+          "添加网络隔离"
+        ]
+      },
+      {
+        "id": "CHAIN_003",
+        "title": "路径遍历到RCE链",
+        "severity": "HIGH",
+        "attacker_profile": "有代码生成权限的管理员",
+        "goal": "在服务器上写入恶意代码",
+        "steps": [
+          {
+            "step": 1,
+            "action": "登录系统",
+            "endpoint": "POST /token",
+            "description": "使用管理员账号登录",
+            "vulnerabilities_used": []
+          },
+          {
+            "step": 2,
+            "action": "创建代码生成任务",
+            "endpoint": "POST /code/submit",
+            "description": "配置代码生成路径",
+            "vulnerabilities_used": []
+          },
+          {
+            "step": 3,
+            "action": "设置恶意路径",
+            "endpoint": "POST /code/submit",
+            "description": "设置apiPath为路径遍历payload",
+            "vulnerabilities_used": ["PATH_TRAVERSAL_001"],
+            "payload": "{\"apiPath\": \"../../../webapps/ROOT/\", \"serviceName\": \"shell\", \"tableName\": \"cmd\"}"
+          },
+          {
+            "step": 4,
+            "action": "生成代码",
+            "endpoint": "POST /code/gen-code",
+            "description": "在webroot目录生成代码",
+            "vulnerabilities_used": ["PATH_TRAVERSAL_001"]
+          },
+          {
+            "step": 5,
+            "action": "访问生成的代码",
+            "description": "访问http://target/shell/...",
+            "impact": "远程代码执行"
+          }
+        ],
+        "impact": "服务器被完全控制",
+        "defenses": [
+          "验证并规范化路径",
+          "限制生成目录",
+          "代码审查"
+        ]
+      },
+      {
+        "id": "CHAIN_004",
+        "title": "暴力破解到账号接管链",
+        "severity": "MEDIUM",
+        "attacker_profile": "外部攻击者",
+        "goal": "获取用户账号访问权限",
+        "steps": [
+          {
+            "step": 1,
+            "action": "枚举用户名",
+            "endpoint": "GET /user/user-list",
+            "description": "如果接口无认证，可以枚举用户名",
+            "vulnerabilities_used": ["AUTHZ_004"]
+          },
+          {
+            "step": 2,
+            "action": "绕过单IP锁定",
+            "endpoint": "POST /token",
+            "description": "使用多个IP地址进行暴力破解",
+            "vulnerabilities_used": ["BRUTE_FORCE_001"],
+            "technique": "分布式攻击"
+          },
+          {
+            "step": 3,
+            "action": "获取验证码",
+            "endpoint": "GET /captcha",
+            "description": "每次登录前获取验证码",
+            "note": "需要验证码识别能力"
+          },
+          {
+            "step": 4,
+            "action": "暴力破解密码",
+            "endpoint": "POST /token",
+            "description": "尝试常见密码",
+            "vulnerabilities_used": ["BRUTE_FORCE_001"]
+          },
+          {
+            "step": 5,
+            "action": "登录成功",
+            "description": "获取JWT token",
+            "impact": "账号被接管"
+          }
+        ],
+        "impact": "用户账号被接管",
+        "defenses": [
+          "添加验证码",
+          "实现全局速率限制",
+          "增强账号锁定机制"
+        ]
+      }
+    ],
+    "chained_vulnerabilities": [
+      {
+        "chain": "跨租户权限提升",
+        "vulnerabilities": [
+          "AUTHZ_002 - 水平越权",
+          "IDOR_002 - 权限授予IDOR",
+          "BIZ_001 - 多租户隔离失效"
+        ]
+      },
+      {
+        "chain": "内网探测",
+        "vulnerabilities": [
+          "SSRF_002 - 数据源SSRF",
+          "INFO_DISC_001 - 服务发现"
+        ]
+      },
+      {
+        "chain": "RCE",
+        "vulnerabilities": [
+          "PATH_TRAVERSAL_001 - 代码生成路径遍历",
+          "CODE_INJ_001 - 代码注入"
+        ]
+      }
+    ],
+    "mitigation_priorities": [
+      {
+        "priority": 1,
+        "vulnerabilities": ["AUTHZ_002", "IDOR_002"],
+        "reason": "可能导致跨租户数据泄露",
+        "effort": "MEDIUM"
+      },
+      {
+        "priority": 2,
+        "vulnerabilities": ["SSRF_002"],
+        "reason": "可能导致内网探测",
+        "effort": "LOW"
+      },
+      {
+        "priority": 3,
+        "vulnerabilities": ["PATH_TRAVERSAL_001"],
+        "reason": "可能导致RCE",
+        "effort": "MEDIUM"
+      },
+      {
+        "priority": 4,
+        "vulnerabilities": ["BRUTE_FORCE_001"],
+        "reason": "可能导致账号接管",
+        "effort": "LOW"
+      }
+    ]
+  }
+}

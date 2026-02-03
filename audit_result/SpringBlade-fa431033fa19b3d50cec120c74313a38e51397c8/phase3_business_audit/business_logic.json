@@ -1,0 +1,183 @@
+{
+  "scan_date": "2025-02-03",
+  "project_name": "SpringBlade",
+  "business_logic_analysis": {
+    "summary": {
+      "total_issues": 6,
+      "critical": 2,
+      "high": 2,
+      "medium": 2
+    },
+    "business_vulnerabilities": [
+      {
+        "id": "BIZ_001",
+        "title": "多租户隔离失效",
+        "severity": "CRITICAL",
+        "category": "Access Control",
+        "description": "多个接口未正确验证租户所有权，导致跨租户数据访问",
+        "affected_components": [
+          "UserController.detail()",
+          "UserController.list() - 部分验证",
+          "TenantController.detail()",
+          "TenantController.submit()",
+          "TenantController.remove()"
+        ],
+        "business_impact": "租户A可以访问/修改租户B的数据，违反多租户SaaS的基本安全要求",
+        "attack_scenario": "1. 攻击者注册租户A并获得管理员权限\n2. 通过枚举ID访问其他租户的用户信息\n3. 修改其他租户的配置或用户数据",
+        "remediation": "实现全局的租户拦截器，确保所有数据操作都验证tenantId所有权"
+      },
+      {
+        "id": "BIZ_002",
+        "title": "权限提升链",
+        "severity": "CRITICAL",
+        "category": "Privilege Escalation",
+        "description": "存在从普通用户到管理员的权限提升路径",
+        "affected_components": [
+          "UserController.grant()",
+          "UserController.resetPassword()"
+        ],
+        "business_impact": "普通用户可能将自己提升为管理员，完全控制应用",
+        "attack_scenario": "1. 注册新账号\n2. 利用IDOR漏洞修改自己的roleId为管理员角色\n3. 使用管理员权限访问所有功能",
+        "remediation": "验证操作者有权限修改目标用户，添加权限变更审计"
+      },
+      {
+        "id": "BIZ_003",
+        "title": "第三方注册绕过",
+        "severity": "HIGH",
+        "category": "Authentication",
+        "description": "社交登录注册流程可能被滥用",
+        "affected_components": [
+          "UserController.registerGuest()",
+          "SocialController"
+        ],
+        "business_impact": "攻击者可能通过伪造OAuth响应创建大量垃圾账号",
+        "attack_scenario": "1. 攻击者控制OAuth提供商响应\n2. 使用任意用户名调用registerGuest\n3. 绕过正常注册流程创建账号",
+        "remediation": "验证OAuth响应的真实性，添加邮箱验证"
+      },
+      {
+        "id": "BIZ_004",
+        "title": "密码重置滥用",
+        "severity": "HIGH",
+        "category": "Account Management",
+        "description": "管理员可以重置任何用户的密码，缺少二次验证",
+        "affected_components": [
+          "UserController.resetPassword()"
+        ],
+        "business_impact": "恶意管理员可以接管其他用户账号",
+        "attack_scenario": "1. 管理员调用resetPassword重置目标用户密码\n2. 使用默认密码登录目标用户账号\n3. 窃取用户数据或执行恶意操作",
+        "remediation": "添加密码重置通知，要求用户首次登录修改密码"
+      },
+      {
+        "id": "BIZ_005",
+        "title": "数据导出泄露",
+        "severity": "MEDIUM",
+        "category": "Data Protection",
+        "description": "用户导出功能可能泄露敏感信息",
+        "affected_components": [
+          "UserController.exportUser()"
+        ],
+        "business_impact": "管理员可能导出所有用户数据并外泄",
+        "attack_scenario": "1. 恶意管理员调用exportUser\n2. 获取包含所有用户信息的Excel文件\n3. 将数据泄露给竞争对手",
+        "remediation": "添加数据导出审计，限制导出频率"
+      },
+      {
+        "id": "BIZ_006",
+        "title": "租户隔离绕过",
+        "severity": "MEDIUM",
+        "category": "Multi-tenancy",
+        "description": "通过修改tenantId头部可能绕过租户隔离",
+        "affected_components": [
+          "AuthController.token()",
+          "所有使用@RequestHeader(\"Tenant-Id\")的接口"
+        ],
+        "business_impact": "用户可能通过修改租户ID头部访问其他租户的资源",
+        "attack_scenario": "1. 用户登录租户A获取token\n2. 修改请求头Tenant-Id为租户B\n3. 使用租户A的身份访问租户B的资源",
+        "remediation": "验证token中的tenantId与请求头中的tenantId一致"
+      }
+    ],
+    "workflow_analysis": [
+      {
+        "workflow": "用户注册和登录",
+        "steps": [
+          "1. 用户提交账号密码",
+          "2. 系统验证captcha",
+          "3. 系统验证用户名密码",
+          "4. 生成JWT token",
+          "5. 返回token给用户"
+        ],
+        "vulnerabilities": [
+          "captcha可能被绕过或暴力破解",
+          "缺少账号枚举防护",
+          "JWT token缺少撤销机制"
+        ]
+      },
+      {
+        "workflow": "OAuth社交登录",
+        "steps": [
+          "1. 用户选择OAuth提供商",
+          "2. 重定向到OAuth提供商",
+          "3. 用户授权",
+          "4. 回调到应用",
+          "5. 创建或更新用户",
+          "6. 生成token"
+        ],
+        "vulnerabilities": [
+          "state参数可能被伪造(CSRF)",
+          "OAuth提供商未验证白名单",
+          "可能创建未验证的账号"
+        ]
+      },
+      {
+        "workflow": "权限授予",
+        "steps": [
+          "1. 管理员选择用户",
+          "2. 管理员选择角色",
+          "3. 系统更新用户角色",
+          "4. 清除缓存"
+        ],
+        "vulnerabilities": [
+          "未验证用户和管理员的租户关系",
+          "缺少二次确认",
+          "无审计日志"
+        ]
+      },
+      {
+        "workflow": "代码生成",
+        "steps": [
+          "1. 管理员配置数据源",
+          "2. 管理员配置代码生成参数",
+          "3. 系统连接数据库",
+          "4. 系统生成代码",
+          "5. 代码写入文件系统"
+        ],
+        "vulnerabilities": [
+          "数据源URL未验证(SSRF)",
+          "生成路径未验证(路径遍历)",
+          "生成的代码未安全审查"
+        ]
+      }
+    ],
+    "race_conditions": [
+      {
+        "id": "RACE_001",
+        "title": "密码重置竞争条件",
+        "description": "在用户修改密码的同时，管理员重置密码可能导致不一致",
+        "severity": "LOW"
+      },
+      {
+        "id": "RACE_002",
+        "title": "库存扣减竞争条件",
+        "description": "blade-seata-order和blade-seata-storage模块使用Seata处理分布式事务，但需要确认隔离级别",
+        "severity": "MEDIUM"
+      }
+    ],
+    "business_logic_recommendations": [
+      "实现全局的租户拦截器",
+      "为所有敏感操作添加二次确认",
+      "实现完整的审计日志系统",
+      "添加实时权限验证",
+      "实现权限变更通知",
+      "加强OAuth安全验证"
+    ]
+  }
+}

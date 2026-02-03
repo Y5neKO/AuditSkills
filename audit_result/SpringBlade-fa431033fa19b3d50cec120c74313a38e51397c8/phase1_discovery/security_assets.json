@@ -1,0 +1,152 @@
+{
+  "scan_date": "2025-02-03",
+  "project_name": "SpringBlade",
+  "summary": {
+    "total_config_files": 45,
+    "files_with_secrets": 26,
+    "critical_secrets": 0,
+    "high_secrets": 5
+  },
+  "sensitive_configurations": [
+    {
+      "type": "Database Credentials",
+      "files": [
+        "blade-service/blade-system/src/main/resources/application-dev.yml",
+        "blade-service/blade-system/src/main/resources/application-test.yml",
+        "blade-service/blade-system/src/main/resources/application-prod.yml",
+        "blade-auth/src/main/resources/application-dev.yml",
+        "blade-auth/src/main/resources/application-test.yml",
+        "blade-auth/src/main/resources/application-prod.yml"
+      ],
+      "note": "配置文件包含数据库连接信息，应使用Nacos配置中心或环境变量"
+    },
+    {
+      "type": "Redis Credentials",
+      "files": [
+        "blade-auth/src/main/resources/application.yml",
+        "blade-gateway/src/main/resources/application.yml",
+        "blade-service/blade-system/src/main/resources/application-dev.yml"
+      ],
+      "note": "Redis连接配置建议迁移至配置中心"
+    },
+    {
+      "type": "JWT Keys",
+      "location": "blade-auth/src/main/java/org/springblade/auth/granter/PasswordTokenGranter.java",
+      "note": "公钥和私钥配置在authProperties中，应从安全存储中获取"
+    }
+  ],
+  "authentication_mechanisms": [
+    {
+      "type": "JWT Token",
+      "location": "blade-auth/src/main/java/org/springblade/auth/utils/TokenUtil.java",
+      "implementation": "使用SecureUtil.createJWT()生成JWT",
+      "expiration": "未在代码中明确设置",
+      "concerns": [
+        "JWT签名密钥管理不明确",
+        "Refresh Token机制存在但缺少撤销机制"
+      ]
+    },
+    {
+      "type": "SM2 Encryption",
+      "location": "blade-auth/src/main/java/org/springblade/auth/utils/TokenUtil.java",
+      "implementation": "使用国密SM2加密密码",
+      "note": "密码加密强度较高"
+    },
+    {
+      "type": "Social Login",
+      "providers": ["GitHub", "Gitee", "微信", "QQ", "钉钉"],
+      "location": "blade-auth/src/main/java/org/springblade/auth/controller/SocialController.java",
+      "concerns": [
+        "OAuth回调端点无CSRF保护",
+        "state参数验证不明确"
+      ]
+    }
+  ],
+  "session_management": [
+    {
+      "type": "Redis-based Session",
+      "location": "blade-auth/src/main/java/org/springblade/auth/utils/TokenUtil.java",
+      "features": [
+        "登录失败次数限制（5次）",
+        "IP级别的登录锁定",
+        "30分钟锁定时间"
+      ],
+      "concerns": [
+        "未实现分布式环境下的速率限制",
+        "缺少验证码暴力破解保护"
+      ]
+    }
+  ],
+  "authorization": [
+    {
+      "mechanism": "@PreAuth Annotation",
+      "implementation": "org.springblade.core.secure.annotation.PreAuth",
+      "role_check": "RoleConstant.HAS_ROLE_ADMIN",
+      "concerns": [
+        "部分敏感端点缺少@PreAuth注解",
+        "租户级别的访问控制依赖手动实现"
+      ]
+    },
+    {
+      "type": "Multi-tenancy",
+      "implementation": "基于tenantId的数据隔离",
+      "concerns": [
+        "tenantId由客户端传入，存在篡改风险",
+        "部分查询未验证tenantId所有权"
+      ]
+    }
+  ],
+  "cryptography": [
+    {
+      "algorithm": "SM2",
+      "usage": "密码加密传输",
+      "location": "blade-auth/src/main/java/org/springblade/auth/utils/TokenUtil.java",
+      "strength": "高"
+    },
+    {
+      "algorithm": "DigestUtil.encrypt()",
+      "usage": "密码哈希存储",
+      "location": "blade-service/blade-system/src/main/java/org/springblade/system/service/impl/UserServiceImpl.java",
+      "note": "需要确认哈希算法（应该是bcrypt或PBKDF2）"
+    }
+  ],
+  "logging_and_monitoring": [
+    {
+      "type": "Log Service",
+      "location": "blade-service/blade-log",
+      "controllers": [
+        "LogErrorController",
+        "LogApiController",
+        "LogUsualController"
+      ],
+      "access_control": "@PreAuth(RoleConstant.HAS_ROLE_ADMIN)",
+      "note": "日志服务有适当的访问控制"
+    }
+  ],
+  "sensitive_data_exposure": [
+    {
+      "endpoint": "/user/export-user",
+      "concern": "导出所有用户数据可能包含敏感信息",
+      "mitigation": "已有@PreAuth保护"
+    },
+    {
+      "endpoint": "/discovery/instances",
+      "concern": "暴露内部微服务架构信息",
+      "mitigation": "无保护，建议限制访问"
+    },
+    {
+      "endpoint": "/tenant/info",
+      "concern": "可能泄露租户配置信息",
+      "mitigation": "无保护，建议添加认证"
+    }
+  ],
+  "recommendations": [
+    "将所有敏感配置迁移至Nacos配置中心或使用外部密钥管理服务",
+    "为JWT签名密钥实现定期轮换机制",
+    "为OAuth实现添加PKCE(Proof Key for Code Exchange)",
+    "实现全局的速率限制中间件",
+    "为/discovery端点添加认证",
+    "验证所有tenantId参数的所有权",
+    "为敏感操作添加审计日志"
+  ]
+}
