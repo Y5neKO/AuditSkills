@@ -170,25 +170,25 @@ def render():
 
 | 子代理 | 职责 | 配置文件 |
 |-------|------|---------|
-| enhanced-audit-orchestrator | 增强型审计协调器 | [agents/enhanced-audit-orchestrator/agent.md](agents/enhanced-audit-orchestrator/agent.md) |
-| forward-auditor | 正向污点分析 | [agents/forward-auditor/agent.md](agents/forward-auditor/agent.md) |
-| backward-auditor | 反向污点分析 | [agents/backward-auditor/agent.md](agents/backward-auditor/agent.md) |
+| enhanced-audit-orchestrator | 增强型审计协调器 | [../../agents/enhanced-audit-orchestrator.md](../../agents/enhanced-audit-orchestrator.md) |
+| forward-auditor | 正向污点分析 | [../../agents/forward-auditor.md](../../agents/forward-auditor.md) |
+| backward-auditor | 反向污点分析 | [../../agents/backward-auditor.md](../../agents/backward-auditor.md) |
 
 ### 上下文分析代理
 
 | 子代理 | 职责 | 配置文件 |
 |-------|------|---------|
-| security-context-analyzer | 安全上下文分析（全局过滤器、中间件） | [agents/security-context-analyzer/agent.md](agents/security-context-analyzer/agent.md) |
-| library-version-analyzer | 库版本分析（已知漏洞、版本特性） | [agents/library-version-analyzer/agent.md](agents/library-version-analyzer/agent.md) |
-| framework-config-analyzer | 框架配置分析（安全设置） | [agents/framework-config-analyzer/agent.md](agents/framework-config-analyzer/agent.md) |
+| security-context-analyzer | 安全上下文分析（全局过滤器、中间件） | [../../agents/security-context-analyzer.md](../../agents/security-context-analyzer.md) |
+| library-version-analyzer | 库版本分析（已知漏洞、版本特性） | [../../agents/library-version-analyzer.md](../../agents/library-version-analyzer.md) |
+| framework-config-analyzer | 框架配置分析（安全设置） | [../../agents/framework-config-analyzer.md](../../agents/framework-config-analyzer.md) |
 
 ### 报告生成代理
 
 | 子代理 | 职责 | 配置文件 |
 |-------|------|---------|
-| poc-generator | PoC生成（含绕过方法） | [agents/poc-generator/agent.md](agents/poc-generator/agent.md) |
-| report-generator | 报告生成 | [agents/report-generator/agent.md](agents/report-generator/agent.md) |
-| attack-chain-orchestrator | 攻击链编排 | [agents/attack-chain-orchestrator/agent.md](agents/attack-chain-orchestrator/agent.md) |
+| poc-generator | PoC生成（含绕过方法） | [../../agents/poc-generator.md](../../agents/poc-generator.md) |
+| report-generator | 报告生成 | [../../agents/report-generator.md](../../agents/report-generator.md) |
+| attack-chain-orchestrator | 攻击链编排 | [../../agents/attack-chain-orchestrator.md](../../agents/attack-chain-orchestrator.md) |
 
 ## 规则库
 
@@ -294,8 +294,8 @@ def render():
 
 ## 参考资源
 
-- 增强型审计协调器：[agents/enhanced-audit-orchestrator/agent.md](agents/enhanced-audit-orchestrator/agent.md)
-- 安全上下文分析：[agents/security-context-analyzer/agent.md](agents/security-context-analyzer/agent.md)
-- 库版本分析：[agents/library-version-analyzer/agent.md](agents/library-version-analyzer/agent.md)
-- 框架配置分析：[agents/framework-config-analyzer/agent.md](agents/framework-config-analyzer/agent.md)
+- 增强型审计协调器：[../../agents/enhanced-audit-orchestrator.md](../../agents/enhanced-audit-orchestrator.md)
+- 安全上下文分析：[../../agents/security-context-analyzer.md](../../agents/security-context-analyzer.md)
+- 库版本分析：[../../agents/library-version-analyzer.md](../../agents/library-version-analyzer.md)
+- 框架配置分析：[../../agents/framework-config-analyzer.md](../../agents/framework-config-analyzer.md)
 - 输出示例：[examples/sample-report.json](examples/sample-report.json)
