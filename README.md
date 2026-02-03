@@ -62,3 +62,12 @@ cp -r AuditSkills/skills .claude
 
 报告：[扫描报告](./audit_result/SpringBlade-fa431033fa19b3d50cec120c74313a38e51397c8/report.md)
 
+### SpringBlade 3.0.0.RELEASE
+
+使用Skills版本：
+
+使用模型：GLM-4.7
+
+版本：
+
+报告：
