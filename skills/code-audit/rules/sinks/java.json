@@ -535,6 +535,133 @@
       ],
       "cwe": ["CWE-94"],
       "remediation": "限制表达式上下文"
+    },
+    {
+      "name": "groovyshell_evaluate",
+      "pattern": "GroovyShell\\.(?:evaluate|parse|run)\\(",
+      "vuln_types": ["rce", "code_injection"],
+      "description": "GroovyShell执行 - Groovy代码注入",
+      "dangerous_param": 0,
+      "modules": ["groovy.lang", "org.codehaus.groovy"],
+      "examples": [
+        "new GroovyShell().evaluate(userScript)",
+        "groovyShell.parse(scriptCode)",
+        "shell.run(scriptCode, args)"
+      ],
+      "cwe": ["CWE-94", "CWE-917"],
+      "remediation": "避免执行不可信的Groovy脚本，使用沙箱或白名单"
+    },
+    {
+      "name": "groovyclassloader_parseclass",
+      "pattern": "GroovyClassLoader\\.(?:parseClass|defineClass|reparse)\\(",
+      "vuln_types": ["rce", "deserialization"],
+      "description": "GroovyClassLoader动态加载类 - 任意代码执行",
+      "dangerous_param": 0,
+      "modules": ["groovy.lang", "org.codehaus.groovy"],
+      "examples": [
+        "new GroovyClassLoader().parseClass(userScript)",
+        "groovyClassLoader.parseClass(scriptBytes)",
+        "gcl.defineClass(className, bytecode)"
+      ],
+      "cwe": ["CWE-94", "CWE-502"],
+      "remediation": "限制类加载范围，使用编译器配置限制"
+    },
+    {
+      "name": "groovy_eval",
+      "pattern": "Eval\\.(?:me|xyz)\\(",
+      "vuln_types": ["rce", "code_injection"],
+      "description": "Groovy Eval快速求值 - 代码注入",
+      "dangerous_param": null,
+      "modules": ["groovy.util"],
+      "examples": [
+        "Eval.me(userExpression)",
+        "Eval.xyz('x', x, 'x * x')"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "避免使用Eval处理用户输入"
+    },
+    {
+      "name": "invokerhelper_invoke",
+      "pattern": "InvokerHelper\\.(?:invokeMethod|invokeStatic)\\(",
+      "vuln_types": ["rce"],
+      "description": "InvokerHelper动态调用 - 方法注入",
+      "dangerous_param": 1,
+      "modules": ["org.codehaus.groovy"],
+      "examples": [
+        "InvokerHelper.invokeMethod(obj, methodName, args)",
+        "InvokerHelper.invokeStatic(className, method, args)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "验证方法名和参数"
+    },
+    {
+      "name": "groovyscript_engine",
+      "pattern": "GroovyScriptEngine\\.(?:run|createScript)\\(",
+      "vuln_types": ["rce", "code_injection"],
+      "description": "GroovyScriptEngine执行脚本 - 代码注入",
+      "dangerous_param": 0,
+      "modules": ["groovy.util", "org.codehaus.groovy"],
+      "examples": [
+        "engine.run(userScript, binding)",
+        "groovyScriptEngine.createScript(scriptName, binding)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "限制脚本路径，使用可信源"
+    },
+    {
+      "name": "binding_setvariable",
+      "pattern": "Binding\\.(?:setVariable|getVariable)\\(",
+      "vuln_types": ["rce"],
+      "description": "Groovy Binding变量注入",
+      "dangerous_param": 1,
+      "modules": ["groovy.lang"],
+      "examples": [
+        "binding.setVariable(userVar, value)",
+        "new Binding(variables)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "验证变量名"
+    },
+    {
+      "name": "groovytemplate_make",
+      "pattern": "(?:GStringTemplate|SimpleTemplate|Template)\\.make\\(",
+      "vuln_types": ["ssti", "rce"],
+      "description": "Groovy模板渲染 - SSTI",
+      "dangerous_param": 0,
+      "modules": ["groovy.text", "org.codehaus.groovy"],
+      "examples": [
+        "template.make(userMap).toString()",
+        "new GStringTemplateEngine().createTemplate(userTpl).make(binding)"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "使用模板引擎安全配置，限制表达式"
+    },
+    {
+      "name": "groovy_category_use",
+      "pattern": "use\\s*\\([^)]*\\)\\s*\\{",
+      "vuln_types": ["rce"],
+      "description": "Groovy Category动态方法注入",
+      "dangerous_param": null,
+      "modules": ["groovy.lang"],
+      "examples": [
+        "use(UserCategory) { /* dangerous code */ }"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "限制Category类"
+    },
+    {
+      "name": "groovy_metaClass",
+      "pattern": "\\.metaClass\\.(?:invokeMethod|setProperty|static\\.[^\\s]+\\s*=)",
+      "vuln_types": ["rce"],
+      "description": "Groovy MetaClass动态注入",
+      "dangerous_param": null,
+      "modules": ["groovy.lang"],
+      "examples": [
+        "obj.metaClass.invokeMethod = { name, args -> /* exploit */ }",
+        "String.metaClass.static.new = { /* exploit */ }"
+      ],
+      "cwe": ["CWE-94"],
+      "remediation": "禁用MetaClass修改或使用安全配置"
     }
   ]
 }
