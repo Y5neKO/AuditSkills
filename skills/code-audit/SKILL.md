@@ -1,453 +1,611 @@
 ---
 name: code-audit
-description: Comprehensive AI-powered code security audit tool for web applications. Performs complete security assessment including asset discovery, technical vulnerability detection, business logic flaws, and attack chain construction. Supports Node.js, Python, Java, and PHP. Use when the user requests code review, security audit, vulnerability assessment, or penetration testing of source code.
+description: Comprehensive AI-powered code security audit tool for web applications. Performs complete security assessment including asset discovery, technical vulnerability detection (SQL injection, XSS, SSRF, command injection, path traversal, deserialization, XXE), business logic flaws, and attack chain construction. Supports Node.js, Python, Java, and PHP. Use when the user requests code review, security audit, vulnerability assessment, or penetration testing of source code.
 ---
 
 # Code Audit - AI代码安全审计工具
 
-## ⚠️ CRITICAL EXECUTION REQUIREMENTS
+## 核心理念
 
-**YOU MUST FOLLOW EVERY STEP IN ORDER. DO NOT SKIP ANY STAGE.**
+**任何可达的 Source → Sink 数据流都是潜在漏洞，无论权限等级**
 
-Each stage has **MANDATORY** checkpoints that MUST be completed before proceeding.
+权限等级仅影响风险评级、利用难度和修复优先级，不影响是否报告。
 
 ---
 
-## Stage 0: Preparation [MANDATORY]
+## Stage 0: 准备工作 [MANDATORY]
 
-### Checkpoint 0.1: Detect Project Framework
+### Step 0.1: 检测项目
 
 ```bash
-# Execute this command FIRST
-find PROJECT_PATH -name "package.json" -o -name "pom.xml" -o -name "requirements.txt" -o -name "composer.json" | head -5
+find PROJECT_PATH -name "package.json" -o -name "pom.xml" -o -name "requirements.txt" -o -name "composer.json" | head -1
 ```
 
-**REQUIRED OUTPUT**: Identify framework type (Express/Spring/Django/Laravel)
+### Step 0.2: 加载检测规则 [MANDATORY - MUST READ FILES]
 
-### Checkpoint 0.2: Load Detection Rules [MANDATORY]
+**YOU MUST READ THESE FILES:**
 
-**YOU MUST READ THESE FILES BEFORE ANY ANALYSIS:**
-
-Based on detected language, read the appropriate rule files:
-
-**For Java projects:**
+For Java:
 ```
-REQUIRED: Read rules/sinks/java.json
-REQUIRED: Read rules/sources/java.json
+Read rules/sinks/java.json
+Read rules/sources/java.json
 ```
 
-**For JavaScript projects:**
+For JavaScript:
 ```
-REQUIRED: Read rules/sinks/javascript.json
-REQUIRED: Read rules/sources/javascript.json
-```
-
-**For Python projects:**
-```
-REQUIRED: Read rules/sinks/python.json
-REQUIRED: Read rules/sources/python.json
+Read rules/sinks/javascript.json
+Read rules/sources/javascript.json
 ```
 
-**For PHP projects:**
+For Python:
 ```
-REQUIRED: Read rules/sinks/php.json
-REQUIRED: Read rules/sources/php.json
-```
-
-**VERIFICATION**: Confirm you have loaded the rules by listing how many sink patterns and source patterns were loaded.
-
-Example verification output:
-```
-✅ Loaded 45 sink patterns for Java
-✅ Loaded 28 source patterns for Java
+Read rules/sinks/python.json
+Read rules/sources/python.json
 ```
 
-### Checkpoint 0.3: Create Workspace
+For PHP:
+```
+Read rules/sinks/php.json
+Read rules/sources/php.json
+```
+
+**REQUIRED OUTPUT:**
+```
+✅ Language: Java
+✅ Loaded 52 sink patterns
+✅ Loaded 31 source patterns
+```
+
+### Step 0.3: 创建工作空间
 
 ```bash
-mkdir -p .workspace/code-audit/{phase1_discovery,phase1_5_entry_analysis,phase2_technical_audit,phase2_5_forward_trace,phase3_business_audit,phase4_attack_chains}
-```
-
-**REQUIRED**: Confirm workspace created
-
----
-
-## Stage 1: Asset Discovery [MANDATORY - ALL 4 TASKS]
-
-**DO NOT PROCEED TO STAGE 2 UNTIL ALL 4 JSON FILES ARE CREATED**
-
-### Task 1.1: Web Entry Discovery [MANDATORY]
-
-**REQUIRED ACTIONS:**
-
-1. **Search for HTTP endpoints** using framework-specific patterns from `rules/sources/LANGUAGE.json`
-
-   For Java/Spring Boot:
-   ```bash
-   grep -rn "@GetMapping\|@PostMapping\|@PutMapping\|@DeleteMapping\|@RequestMapping" PROJECT_PATH --include="*.java"
-   ```
-
-2. **Parse ALL results** (do not stop after finding a few)
-
-3. **MUST CREATE FILE**: `.workspace/code-audit/phase1_discovery/web_entries.json`
-
-   Required format:
-   ```json
-   {
-     "project_info": {
-       "framework": "...",
-       "language": "...",
-       "scan_time": "..."
-     },
-     "entry_points": [
-       {
-         "entry_id": "ENTRY-001",
-         "method": "GET",
-         "path": "/api/...",
-         "file": "path/to/file.java",
-         "line": 123,
-         "handler": "methodName",
-         "parameters": [...]
-       }
-     ],
-     "statistics": {
-       "total_entries": 0,
-       "by_method": {}
-     }
-   }
-   ```
-
-**VERIFICATION CHECKPOINT**: 
-- File created? YES/NO
-- How many entry points found? (must be > 0 for most projects)
-
-### Task 1.2: Sink Point Scanner [MANDATORY]
-
-**REQUIRED ACTIONS:**
-
-1. **Load sink patterns** from `rules/sinks/LANGUAGE.json` (if not already loaded in Stage 0)
-
-2. **Search for EACH sink pattern** from the rules file:
-
-   Example for Java (use actual patterns from java.json):
-   ```bash
-   # For SQL sinks
-   grep -rn "\.createQuery\|\.createNativeQuery\|\.executeQuery" PROJECT_PATH --include="*.java"
-   
-   # For Command Injection sinks  
-   grep -rn "Runtime\.getRuntime\(\)\.exec\|ProcessBuilder" PROJECT_PATH --include="*.java"
-   
-   # For XXE sinks
-   grep -rn "DocumentBuilder\|SAXParser\|XMLReader" PROJECT_PATH --include="*.java"
-   ```
-
-3. **MUST CREATE FILE**: `.workspace/code-audit/phase1_discovery/sink_points.json`
-
-   Required format:
-   ```json
-   {
-     "sinks": [
-       {
-         "sink_id": "SINK-001",
-         "type": "sql_injection",
-         "function": "createNativeQuery",
-         "file": "path/to/file.java",
-         "line": 456,
-         "code_snippet": "...",
-         "risk_level": "HIGH"
-       }
-     ],
-     "statistics": {
-       "total_sinks": 0,
-       "by_type": {}
-     }
-   }
-   ```
-
-**VERIFICATION CHECKPOINT**:
-- File created? YES/NO
-- How many sinks found? (list count by type)
-
-### Task 1.3: Security Asset Scanner [MANDATORY]
-
-**REQUIRED ACTIONS:**
-
-1. Search for hardcoded credentials:
-   ```bash
-   grep -rn "password.*=.*\"\|apiKey.*=.*\"\|secret.*=.*\"" PROJECT_PATH
-   ```
-
-2. Find configuration files:
-   ```bash
-   find PROJECT_PATH -name "application.properties" -o -name "application.yml" -o -name ".env"
-   ```
-
-3. **MUST CREATE FILE**: `.workspace/code-audit/phase1_discovery/security_assets.json`
-
-**VERIFICATION CHECKPOINT**: File created? YES/NO
-
-### Task 1.4: Data Model Analyzer [MANDATORY]
-
-**REQUIRED ACTIONS:**
-
-1. Find data models:
-   ```bash
-   grep -rn "@Entity\|@Table\|@Data" PROJECT_PATH --include="*.java"
-   ```
-
-2. **MUST CREATE FILE**: `.workspace/code-audit/phase1_discovery/data_models.json`
-
-**VERIFICATION CHECKPOINT**: File created? YES/NO
-
----
-
-## Stage 1 COMPLETION CHECKPOINT [MANDATORY]
-
-**BEFORE PROCEEDING TO STAGE 2, VERIFY:**
-
-- [ ] web_entries.json created with at least 1 entry point
-- [ ] sink_points.json created with all sink types searched
-- [ ] security_assets.json created
-- [ ] data_models.json created
-
-**OUTPUT REQUIRED SUMMARY:**
-```
-[1/7] ✅ Asset Discovery Complete
-  - Found X HTTP endpoints
-  - Found Y dangerous sink points (breakdown by type)
-  - Found Z security assets
-  - Analyzed W data models
+mkdir -p .workspace/code-audit/{phase1_discovery,phase2_analysis,phase3_validation,pocs}
 ```
 
 ---
 
-## Stage 2: Technical Vulnerability Audit [MANDATORY - SEQUENTIAL]
+## Stage 1: 资产发现 [4 PARALLEL TASKS]
 
-**DO NOT SKIP ANY SUB-STAGE**
+### Task 1.1: HTTP入口发现
 
-### Stage 2.1: Backward Dataflow Tracing [MANDATORY]
-
-**FOR EACH SINK in sink_points.json, YOU MUST:**
-
-1. **Read the file** containing the sink
-2. **Identify the variable** used in the dangerous function
-3. **Trace backwards** to find where it comes from:
-   - Use `grep` to find all assignments to that variable
-   - Read each assignment location
-   - Check if it originates from user input (HTTP parameters, etc.)
-4. **Record the call chain**
-
-**MANDATORY ALGORITHM:**
+**MANDATORY OUTPUT: .workspace/code-audit/phase1_discovery/web_entries.json**
 
 ```
-For each sink in sink_points.json:
-  1. Read sink.file at sink.line
-  2. Extract variable name used in dangerous function
-  3. Search backwards for variable definition:
-     - grep -n "variable_name.*=" sink.file
-  4. For each definition found:
-     - Read that line and surrounding context
-     - Check if it's from user input (req.getParameter, @RequestParam, etc.)
-     - Check if there's any filtering/sanitization
-  5. Build call_chain array
-  6. Save to traces.json
+Task: web_entry_scanner
+Prompt: |
+  PROJECT_PATH: {path}
+  SOURCE_RULES: {rules/sources/LANG.json content}
+  
+  Scan all HTTP endpoints using SOURCE_RULES patterns.
+  
+  YOU MUST CREATE FILE: .workspace/code-audit/phase1_discovery/web_entries.json
+  
+  Format:
+  {
+    "entry_points": [
+      {
+        "entry_id": "ENTRY-001",
+        "method": "POST",
+        "path": "/api/endpoint",
+        "file": "Controller.java",
+        "line": 50,
+        "handler": "methodName",
+        "parameters": [{"name": "param", "type": "query"}],
+        "auth_required": "AUTHENTICATED"
+      }
+    ],
+    "statistics": {"total": 45, "by_auth": {"PUBLIC": 5, "AUTHENTICATED": 35, "ADMIN": 5}}
+  }
+  
+  Output: "✅ Found X endpoints (PUBLIC: Y, AUTH: Z, ADMIN: W)"
 ```
 
-**MUST CREATE FILE**: `.workspace/code-audit/phase2_technical_audit/traces.json`
+### Task 1.2: Sink点扫描
 
-Required format:
+**MANDATORY OUTPUT: .workspace/code-audit/phase1_discovery/sink_points.json**
+
+```
+Task: sink_scanner
+Prompt: |
+  PROJECT_PATH: {path}
+  SINK_RULES: {rules/sinks/LANG.json content}
+  
+  CRITICAL: Search ALL patterns in SINK_RULES.
+  
+  YOU MUST CREATE FILE: .workspace/code-audit/phase1_discovery/sink_points.json
+  
+  Format:
+  {
+    "sinks": [
+      {
+        "sink_id": "SINK-001",
+        "type": "sql_injection",
+        "pattern_matched": "\\.createQuery\\(",
+        "function": "createQuery",
+        "file": "Action.java",
+        "line": 248,
+        "code_snippet": "query(sql)",
+        "tainted_variable": "sql",
+        "severity": "HIGH",
+        "cwe": "CWE-89"
+      }
+    ],
+    "statistics": {"total": 47, "by_type": {...}, "patterns_searched": 52}
+  }
+  
+  Output: "✅ Found X sinks, searched Y patterns"
+```
+
+### Task 1.3: 安全资产扫描
+
+**MANDATORY OUTPUT: .workspace/code-audit/phase1_discovery/security_assets.json**
+
+```
+Task: security_asset_scanner
+Prompt: |
+  Search security configs and credentials.
+  
+  YOU MUST CREATE FILE: .workspace/code-audit/phase1_discovery/security_assets.json
+  
+  Format:
+  {
+    "assets": [...],
+    "statistics": {"total": 12}
+  }
+  
+  Output: "✅ Found X assets"
+```
+
+### Task 1.4: 数据模型分析
+
+**MANDATORY OUTPUT: .workspace/code-audit/phase1_discovery/data_models.json**
+
+```
+Task: data_model_analyzer
+Prompt: |
+  Analyze data models.
+  
+  YOU MUST CREATE FILE: .workspace/code-audit/phase1_discovery/data_models.json
+  
+  Format:
+  {
+    "models": [...],
+    "statistics": {"total": 8}
+  }
+  
+  Output: "✅ Analyzed X models"
+```
+
+### Stage 1 验证 [MANDATORY]
+
+```bash
+# Main flow MUST:
+Read .workspace/code-audit/phase1_discovery/web_entries.json
+Read .workspace/code-audit/phase1_discovery/sink_points.json
+Read .workspace/code-audit/phase1_discovery/security_assets.json
+Read .workspace/code-audit/phase1_discovery/data_models.json
+```
+
+**REQUIRED OUTPUT:**
+```
+[1/4] ✅ Asset Discovery
+  ✅ web_entries.json (45 endpoints)
+  ✅ sink_points.json (47 sinks, 52 patterns)
+  ✅ security_assets.json (12 assets)
+  ✅ data_models.json (8 models)
+```
+
+---
+
+## Stage 2: 深度分析 [3 SEQUENTIAL TASKS - 依赖链执行]
+
+> ⚠️ **CRITICAL: 以下任务必须按顺序执行，每个任务依赖前一个任务的输出**
+
+### Step 2.1: LSP代码分析
+
+**依赖输入:**
+- `.workspace/code-audit/phase1_discovery/sink_points.json`
+
+**MANDATORY OUTPUT: .workspace/code-audit/phase2_analysis/lsp_analysis.json**
+
+```
+Task: lsp_analyzer
+Prompt: |
+  Read .workspace/code-audit/phase1_discovery/sink_points.json
+
+  Use LSP if available, else grep.
+
+  YOU MUST CREATE FILE: .workspace/code-audit/phase2_analysis/lsp_analysis.json
+
+  Format:
+  {
+    "lsp_available": true,
+    "variable_flows": [...],
+    "statistics": {"total_flows": 47}
+  }
+
+  Output: "✅ LSP: {status}, Flows: X"
+```
+
+**完成验证:**
+```bash
+# MUST verify output exists:
+Read .workspace/code-audit/phase2_analysis/lsp_analysis.json
+```
+
+**REQUIRED OUTPUT:**
+```
+[2.1/3] ✅ LSP Analysis
+  ✅ lsp_analysis.json (LSP: yes, 47 flows)
+```
+
+---
+
+### Step 2.2: 反向污点追踪
+
+**依赖输入:**
+- `.workspace/code-audit/phase1_discovery/sink_points.json`
+- `.workspace/code-audit/phase1_discovery/web_entries.json`
+- `.workspace/code-audit/phase2_analysis/lsp_analysis.json` ⬅️ 来自 Step 2.1
+
+**MANDATORY OUTPUT: .workspace/code-audit/phase2_analysis/backward_traces.json**
+
+```
+Task: backward_tracer
+Prompt: |
+  Read .workspace/code-audit/phase1_discovery/sink_points.json
+  Read .workspace/code-audit/phase1_discovery/web_entries.json
+  Read .workspace/code-audit/phase2_analysis/lsp_analysis.json
+
+  CRITICAL: Trace ALL sinks.
+
+  YOU MUST CREATE FILE: .workspace/code-audit/phase2_analysis/backward_traces.json
+
+  Format:
+  {
+    "traces": [
+      {
+        "trace_id": "TRACE-001",
+        "sink_id": "SINK-001",
+        "entry_id": "ENTRY-015",
+        "auth_required": "AUTHENTICATED",
+        "call_chain": [...],
+        "is_vulnerable": true
+      }
+    ],
+    "statistics": {"total_traces": 47, "vulnerable": 23}
+  }
+
+  Output: "✅ Traced X/Y, Z vulnerable"
+```
+
+**完成验证:**
+```bash
+# MUST verify output exists:
+Read .workspace/code-audit/phase2_analysis/backward_traces.json
+```
+
+**REQUIRED OUTPUT:**
+```
+[2.2/3] ✅ Backward Tracing
+  ✅ backward_traces.json (47 traces, 23 vulnerable)
+```
+
+---
+
+### Step 2.3: 正向污点追踪
+
+**依赖输入:**
+- `.workspace/code-audit/phase1_discovery/web_entries.json`
+- `.workspace/code-audit/phase1_discovery/sink_points.json`
+- `.workspace/code-audit/phase2_analysis/backward_traces.json` ⬅️ 来自 Step 2.2
+
+**MANDATORY OUTPUT: .workspace/code-audit/phase2_analysis/forward_traces.json**
+
+```
+Task: forward_tracer
+Prompt: |
+  Read .workspace/code-audit/phase1_discovery/web_entries.json
+  Read .workspace/code-audit/phase1_discovery/sink_points.json
+  Read .workspace/code-audit/phase2_analysis/backward_traces.json
+
+  YOU MUST CREATE FILE: .workspace/code-audit/phase2_analysis/forward_traces.json
+
+  Format:
+  {
+    "traces": [...],
+    "statistics": {"validated_backward": 22}
+  }
+
+  Output: "✅ Validated X traces"
+```
+
+**完成验证:**
+```bash
+# MUST verify output exists:
+Read .workspace/code-audit/phase2_analysis/forward_traces.json
+```
+
+**REQUIRED OUTPUT:**
+```
+[2.3/3] ✅ Forward Tracing
+  ✅ forward_traces.json (validated 22)
+```
+
+### Stage 2 汇总输出 [MANDATORY]
+
+**所有步骤完成后输出:**
+```
+[2/4] ✅ Deep Analysis Complete
+  Step 2.1: ✅ lsp_analysis.json (LSP: yes, 47 flows)
+  Step 2.2: ✅ backward_traces.json (47 traces, 23 vulnerable)
+  Step 2.3: ✅ forward_traces.json (validated 22)
+```
+
+---
+
+## Stage 3: 漏洞验证 [SEQUENTIAL]
+
+### Step 3.1: 读取所有产物 [MANDATORY]
+
+```bash
+# MUST READ ALL:
+Read .workspace/code-audit/phase1_discovery/web_entries.json
+Read .workspace/code-audit/phase1_discovery/sink_points.json
+Read .workspace/code-audit/phase1_discovery/security_assets.json
+Read .workspace/code-audit/phase1_discovery/data_models.json
+Read .workspace/code-audit/phase2_analysis/lsp_analysis.json
+Read .workspace/code-audit/phase2_analysis/backward_traces.json
+Read .workspace/code-audit/phase2_analysis/forward_traces.json
+```
+
+### Step 3.2: 漏洞验证和评级
+
+**MANDATORY OUTPUT: .workspace/code-audit/phase3_validation/validated_vulnerabilities.json**
+
+```
+For each trace in backward_traces:
+  1. Confirm source-to-sink path
+  2. Assess filters
+  3. Adjust severity by auth level:
+     - PUBLIC: increase severity
+     - AUTHENTICATED: keep severity
+     - ADMIN: decrease severity
+  4. Calculate CVSS
+```
+
+**Format:**
 ```json
 {
-  "traces": [
+  "vulnerabilities": [
     {
-      "trace_id": "TRACE-001",
-      "sink_id": "SINK-001",
-      "source": "req.getParameter('id')",
-      "call_chain": [
-        {
-          "step": 1,
-          "location": "file.java:20",
-          "code": "String id = req.getParameter(\"id\")",
-          "type": "SOURCE",
-          "tainted": true
-        },
-        {
-          "step": 2,
-          "location": "file.java:25",
-          "code": "query(\"SELECT * WHERE id=\" + id)",
-          "type": "SINK",
-          "tainted": true
-        }
-      ],
-      "filters": [],
-      "preliminary_vulnerable": true
-    }
-  ]
-}
-```
-
-**CHECKPOINT**: How many traces found? Must trace EVERY sink from Stage 1.
-
-### Stage 2.2: Vulnerability Validation [MANDATORY]
-
-**FOR EACH TRACE in traces.json:**
-
-1. Check if filters are effective
-2. Check for bypasses
-3. Classify as TRUE POSITIVE or FALSE POSITIVE
-
-**MUST CREATE FILE**: `.workspace/code-audit/phase2_technical_audit/validated_vulns.json`
-
-**CHECKPOINT**: How many vulnerabilities validated as TRUE POSITIVE?
-
-### Stage 2.3: Vulnerability Correlation [MANDATORY]
-
-Search for similar patterns across the entire codebase.
-
-**MUST CREATE FILE**: `.workspace/code-audit/phase2_technical_audit/correlated_vulns.json`
-
-### Stage 2.4: PoC Generation [MANDATORY]
-
-For each validated vulnerability, generate PoC.
-
-**MUST CREATE FILES**: `.workspace/code-audit/phase2_technical_audit/pocs/VULN-XXX_poc.txt`
-
----
-
-## Stage 2 COMPLETION CHECKPOINT [MANDATORY]
-
-**OUTPUT REQUIRED:**
-```
-[3/7] ✅ Technical Vulnerability Audit Complete
-  - Traced X data flows
-  - Validated Y vulnerabilities (Z false positives excluded)
-  - Found W correlated vulnerabilities
-  - Generated V PoCs
-```
-
----
-
-## Stage 3: Business Logic Audit [MANDATORY]
-
-### Stage 3.1: Access Control Audit
-
-**REQUIRED**: Check EVERY entry point for authorization
-
-**MUST CREATE FILE**: `.workspace/code-audit/phase3_business_audit/access_control.json`
-
-### Stage 3.2: Business Logic Flaws
-
-**MUST CREATE FILE**: `.workspace/code-audit/phase3_business_audit/business_logic.json`
-
----
-
-## Stage 4: Attack Chain Construction [MANDATORY]
-
-Combine vulnerabilities into attack scenarios.
-
-**MUST CREATE FILE**: `.workspace/code-audit/phase4_attack_chains/attack_chains.json`
-
----
-
-## Stage 5: Report Generation [MANDATORY]
-
-Generate final reports.
-
-**MUST CREATE FILES**:
-- `.workspace/code-audit/report.md`
-- `.workspace/code-audit/report.json`
-
----
-
-## FINAL COMPLETION VERIFICATION
-
-**YOU MUST CONFIRM ALL FILES EXIST:**
-
-```bash
-ls -la .workspace/code-audit/phase1_discovery/
-ls -la .workspace/code-audit/phase2_technical_audit/
-ls -la .workspace/code-audit/phase3_business_audit/
-ls -la .workspace/code-audit/phase4_attack_chains/
-ls -la .workspace/code-audit/report.*
-```
-
-**OUTPUT THE FINAL FILE COUNT:**
-```
-✅ Audit Complete
-Total files created: X
-  - Phase 1: 4 files
-  - Phase 2: 4 files
-  - Phase 3: 2 files
-  - Phase 4: 1 file
-  - Reports: 2 files
-```
-
----
-
-## Rules File Format Reference
-
-Your sink and source rules are in JSON format. Here's how to use them:
-
-### rules/sinks/java.json Structure:
-```json
-{
-  "sinks": [
-    {
-      "name": "JPA createNativeQuery",
+      "vuln_id": "VULN-001",
       "type": "sql_injection",
-      "patterns": [
-        "\\.createNativeQuery\\(",
-        "\\.createQuery\\("
-      ],
       "severity": "HIGH",
-      "cwe": "CWE-89"
+      "auth_required": "AUTHENTICATED",
+      "cvss": 8.1,
+      "file": "Action.java",
+      "line": 248,
+      "priority": "P1"
     }
-  ]
+  ],
+  "statistics": {"total": 23, "by_severity": {...}, "by_auth": {...}}
 }
 ```
 
-**How to use:**
-1. Read the file
-2. For each sink entry, extract the `patterns` array
-3. For each pattern, run grep with that pattern
-4. Collect all results
+**CREATE FILE:**
+```bash
+Write .workspace/code-audit/phase3_validation/validated_vulnerabilities.json
+```
 
-### rules/sources/java.json Structure:
+### Step 3.3: PoC生成 [MANDATORY]
+
+**MANDATORY: Create one PoC file per vulnerability**
+
+```bash
+# For each vulnerability:
+Write .workspace/code-audit/pocs/VULN-{id}_poc.txt
+```
+
+**Format:**
+```
+# VULN-001: SQL Injection
+
+## Auth: AUTHENTICATED
+
+## Path
+Source: req.getParameter("sql") line 206
+Sink: jdbc.query(sql) line 248
+
+## PoC
+POST /endpoint
+Cookie: SESSION=...
+sql=...
+
+## Risk
+Severity: HIGH (auth required)
+CVSS: 8.1
+Priority: P1
+```
+
+### Step 3.4: 攻击链 [MANDATORY]
+
+**MANDATORY OUTPUT: .workspace/code-audit/phase3_validation/attack_chains.json**
+
 ```json
 {
-  "sources": [
+  "attack_chains": [
     {
-      "name": "HTTP Request Parameter",
-      "type": "user_input",
-      "patterns": [
-        "@RequestParam",
-        "@PathVariable",
-        "request\\.getParameter\\("
-      ]
+      "chain_id": "CHAIN-001",
+      "name": "SQLi to RCE",
+      "severity": "CRITICAL",
+      "steps": [...]
     }
-  ]
+  ],
+  "statistics": {"total_chains": 5}
 }
+```
+
+**CREATE FILE:**
+```bash
+Write .workspace/code-audit/phase3_validation/attack_chains.json
+```
+
+### Stage 3 验证 [MANDATORY]
+
+```bash
+# MUST verify:
+Read .workspace/code-audit/phase3_validation/validated_vulnerabilities.json
+Read .workspace/code-audit/phase3_validation/attack_chains.json
+ls .workspace/code-audit/pocs/*.txt
+```
+
+**REQUIRED OUTPUT:**
+```
+[3/4] ✅ Validation
+  ✅ validated_vulnerabilities.json (23 vulns)
+  ✅ attack_chains.json (5 chains)
+  ✅ 23 PoC files created
 ```
 
 ---
 
-## Troubleshooting
+## Stage 4: 报告生成 [MANDATORY]
 
-**If you find yourself skipping stages:**
-- STOP immediately
-- Return to the last completed checkpoint
-- Complete all mandatory tasks for that stage
-- Verify all required files exist
-- Then proceed
+### Step 4.1: 读取所有产物 [MANDATORY]
 
-**If you're unsure about a step:**
-- DO NOT guess
-- DO NOT skip
-- Follow the exact bash commands provided
-- Create the exact JSON structure shown
+```bash
+# MUST READ ALL 10 FILES:
+Read .workspace/code-audit/phase1_discovery/web_entries.json
+Read .workspace/code-audit/phase1_discovery/sink_points.json
+Read .workspace/code-audit/phase1_discovery/security_assets.json
+Read .workspace/code-audit/phase1_discovery/data_models.json
+Read .workspace/code-audit/phase2_analysis/lsp_analysis.json
+Read .workspace/code-audit/phase2_analysis/backward_traces.json
+Read .workspace/code-audit/phase2_analysis/forward_traces.json
+Read .workspace/code-audit/phase3_validation/validated_vulnerabilities.json
+Read .workspace/code-audit/phase3_validation/attack_chains.json
+```
 
-**Remember:**
-- Quality > Speed
-- Complete > Fast
-- Every sink must be traced
-- Every entry point must be analyzed
+### Step 4.2: 生成报告 [MANDATORY]
+
+**MANDATORY OUTPUT: .workspace/code-audit/report.md**
+
+```markdown
+# 代码安全审计报告
+
+## 摘要
+- 漏洞: 23 (CRITICAL:2, HIGH:15, MEDIUM:5, LOW:1)
+- 覆盖: 100% (45/45 endpoints, 47/47 sinks, 52/52 patterns)
+
+## 漏洞详情
+### VULN-001: SQL Injection [HIGH]
+- Auth: AUTHENTICATED
+- CVSS: 8.1
+- File: Action.java:248
+- PoC: (详细)
+- Fix: (具体代码)
+
+## 攻击链
+(5 chains)
+
+## 优先级
+P0: 2, P1: 15, P2: 5, P3: 1
+```
+
+**MANDATORY OUTPUT: .workspace/code-audit/report.json**
+
+```json
+{
+  "summary": {"total": 23, "by_severity": {...}},
+  "coverage": {"endpoints": "45/45", "sinks": "47/47", "patterns": "52/52"},
+  "vulnerabilities": [...],
+  "attack_chains": [...],
+  "lsp_enabled": true
+}
+```
+
+**CREATE FILES:**
+```bash
+Write .workspace/code-audit/report.md
+Write .workspace/code-audit/report.json
+```
+
+### Step 4.3: 打包证据 [MANDATORY]
+
+```bash
+tar -czf .workspace/code-audit/audit-evidence.tar.gz \
+  .workspace/code-audit/phase1_discovery/ \
+  .workspace/code-audit/phase2_analysis/ \
+  .workspace/code-audit/phase3_validation/
+```
+
+### Stage 4 验证 [MANDATORY]
+
+```bash
+ls .workspace/code-audit/report.md
+ls .workspace/code-audit/report.json
+ls .workspace/code-audit/audit-evidence.tar.gz
+```
+
+**REQUIRED FINAL OUTPUT:**
+```
+[4/4] ✅ Audit Complete!
+
+📊 Summary:
+  Vulnerabilities: 23
+    - CRITICAL: 2 (no auth)
+    - HIGH: 15 (auth)
+    - MEDIUM: 5 (privileged)
+  
+  Coverage: 100%
+    - Endpoints: 45/45
+    - Sinks: 47/47
+    - Patterns: 52/52
+  
+  Attack Chains: 5
+  LSP: ✅ Enabled
+  Time: 45s
+
+📁 Files:
+  ✅ report.md
+  ✅ report.json
+  ✅ audit-evidence.tar.gz
+  ✅ 23 PoC files
+
+🔴 Critical (P0 - Fix Now):
+  1. VULN-001: SQL Injection (CVSS 9.8)
+  2. VULN-002: RCE (CVSS 9.1)
+
+🟠 High (P1 - Fix in 1 Week):
+  3-17. (15 issues)
+
+Total Files Created: 35
+  Stage 1: 4
+  Stage 2: 3
+  Stage 3: 25
+  Stage 4: 3
+```
+
+---
+
+## CRITICAL REQUIREMENTS
+
+**The audit FAILS if:**
+- ❌ Rules not read in Stage 0
+- ❌ Any Task output file missing
+- ❌ Main flow doesn't read Task outputs
+- ❌ Any sink not traced
+- ❌ Reports not created
+
+**Success requires:**
+- ✅ Read 2 rules files in Stage 0
+- ✅ Create 4 files in Stage 1
+- ✅ Read 4 files after Stage 1
+- ✅ Create 3 files in Stage 2
+- ✅ Read 7 files after Stage 2
+- ✅ Create 25 files in Stage 3
+- ✅ Read 10 files in Stage 4
+- ✅ Create 3 final files
+- ✅ All 52 patterns searched
+- ✅ All 47 sinks traced
